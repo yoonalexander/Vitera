@@ -6,6 +6,8 @@ Complete and verify one requested milestone at a time. Record actual results bel
 
 ## Milestone 0 — Repository and design
 
+Completed on 2026-09-30. Created the private `yoonalexander/CalPal` repository, connected `origin`, and pushed `main` with upstream tracking. Verified private visibility through the GitHub API and matching local/remote commit IDs. Checked local document links, expected ignore rules, staged contents, and Git whitespace validation. Windows is explicitly provisional. No runtime, AI, or installer checks apply yet.
+
 - Establish local Git on `main`, safe ignore rules, consistent text formatting, and repository documentation.
 - Write the product design, proposed architecture, AI cost strategy, and implementation milestones.
 - Create and connect a private GitHub repository if existing access permits.

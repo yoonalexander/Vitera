@@ -32,6 +32,6 @@ Manual tracking and calorie calculations will not require an AI service. Local A
 
 ## Repository
 
-Intended remote: [yoonalexander/CalPal](https://github.com/yoonalexander/CalPal), private.
+Connected remote: [yoonalexander/CalPal](https://github.com/yoonalexander/CalPal), verified private. Local `main` tracks `origin/main`.
 
 No personal health records, meal photos, provider credentials, or generated installers belong in Git. See [.gitignore](.gitignore). No open-source license has been selected; public distribution and monetization are future decisions.

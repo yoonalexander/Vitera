@@ -9,8 +9,8 @@ The first application milestone chooses the platform before adding runtime files
 ## Git conventions
 
 - Default branch: `main`.
-- Intended origin: `https://github.com/yoonalexander/CalPal.git`.
-- Intended visibility: private, appropriate for the initial personal project.
+- Connected origin: `https://github.com/yoonalexander/CalPal.git`.
+- Verified visibility: private, appropriate for the initial personal project.
 - Use focused commits. Do not rewrite or discard intentional local work.
 - Commit code, documentation, and reproducible dependency locks; exclude generated output and personal records.
 
@@ -22,7 +22,7 @@ git remote -v
 git log -1 --oneline
 ```
 
-GitHub creation and push are verified during setup and reported to the user. The URL in these documents is not, by itself, proof of remote success.
+GitHub creation and the initial push were verified on 2026-09-30. Local `main` tracks `origin/main`; the initial local commit matched the remote branch. Recheck live state with Git when continuing work.
 
 ## Future layout
 
