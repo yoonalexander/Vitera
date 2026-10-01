@@ -1,0 +1,34 @@
+name: Verify Windows foundation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm.cmd ci
+      - run: npm.cmd run format:check
+      - run: npm.cmd run build
+      - run: rustup update stable
+      - run: rustup default stable
+      - run: rustup component add rustfmt clippy
+      - run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+      - run: cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
+      - run: npm.cmd run test:native
+      - run: npm.cmd run tauri -- build --debug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CalPal-Windows-development-installer
+          path: src-tauri/target/debug/bundle/nsis/*-setup.exe
+          if-no-files-found: error

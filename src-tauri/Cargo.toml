@@ -1,0 +1,20 @@
+[package]
+name = "calpal"
+version = "0.1.0"
+description = "Personal offline calorie diary"
+authors = ["Alexander Yoon"]
+edition = "2021"
+default-run = "calpal"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+rusqlite = { version = "0.38", features = ["bundled"] }
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+tempfile = "3"

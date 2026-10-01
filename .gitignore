@@ -6,6 +6,11 @@ coverage/
 target/
 .vite/
 src-tauri/gen/
+src-tauri/icons/*
+!src-tauri/icons/32x32.png
+!src-tauri/icons/128x128.png
+!src-tauri/icons/128x128@2x.png
+!src-tauri/icons/icon.ico
 
 # Credentials and local configuration
 .env
@@ -36,6 +41,9 @@ models/
 *.gguf
 *.safetensors
 .cache/
+.tools/
+test-results/
+playwright-report/
 
 # Generated packages
 artifacts/

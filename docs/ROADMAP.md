@@ -1,6 +1,6 @@
 # CalPal roadmap
 
-Status: proposed implementation sequence. Only milestone 0 is in scope for the current repository-setup request.
+Status: milestones 0 and 1 completed. Milestones 2–6 remain proposed and unimplemented.
 
 Complete and verify one requested milestone at a time. Record actual results below the milestone when implemented; a proposed acceptance criterion is not a passed test.
 
@@ -16,6 +16,10 @@ Completed on 2026-09-30. Created the private `yoonalexander/CalPal` repository, 
 Acceptance: documents are linked and readable, no credentials or personal records are tracked, and remote creation/push is verified or any limitation is reported honestly. No application features or installer are built in this milestone.
 
 ## Milestone 1 — Installable offline foundation
+
+Completed on 2026-09-30 after the owner confirmed Windows desktop. Implemented the Tauri/React shell, Today/Recipes/Progress navigation, manual calorie composer, diary edit/delete/undo, date navigation, SQLite migration and durable storage, and system/light/dark appearance settings. Generated an unsigned per-user Windows development installer.
+
+Verification: frontend build/type checking, formatting, four native storage tests, Rust linting, clean-directory installation, installed offline diary workflow, keyboard and dialog focus, light/dark accessibility checks, narrow layout at 200% text size, application restart persistence, and preservation across installer reinstallation all passed locally. Default app-data storage was also verified. See [verification details and limits](VERIFICATION.md). Recipe creation, metric tracking, AI, food search, and target calculations remain later milestones.
 
 - Confirm the first platform before scaffolding its app shell.
 - Implement Today, Recipes, and Progress navigation with the Add food composer.

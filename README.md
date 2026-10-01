@@ -6,9 +6,22 @@ CalPal takes inspiration from the food diary in MyFitnessPal and photo logging i
 
 ## Project status
 
-Planning repository. The product design and delivery roadmap are ready for review; application code, AI connections, and an installer have not been built yet.
+Milestones 0 and 1: repository/design and the Windows offline foundation. CalPal now has a daily calorie diary with add, edit, delete, and undo, local SQLite persistence, appearance settings, and a development installer.
 
-Windows is the provisional first platform, pending confirmation. The proposed stack is Tauri 2, React, TypeScript, and SQLite. A phone-first choice should be resolved before scaffolding the application.
+The first platform is Windows desktop, confirmed by the owner. Built with Tauri 2, React, TypeScript, and bundled SQLite. Recipes and Progress are navigation destinations with clear descriptions of the features planned for milestone 3. AI, food search, target calculations, and metric tracking remain future milestones.
+
+## Run and build
+
+Install Node.js 24, Rust stable (MSVC), Windows C++ build tools, and WebView2. Then:
+
+```powershell
+npm.cmd ci
+npm.cmd run tauri -- dev
+```
+
+Create the development installer with `npm.cmd run tauri -- build --debug`. Output: `src-tauri/target/debug/bundle/nsis/CalPal_0.1.0_x64-setup.exe`. It is unsigned; Windows may show a trust prompt. WebView2 must be present for offline installation, or the installer will need internet to obtain it.
+
+See [development and verification instructions](docs/REPOSITORY.md) for checks and isolated installed-app testing.
 
 ## Planned features
 
@@ -25,6 +38,7 @@ Windows is the provisional first platform, pending confirmation. The proposed st
 - [Product and technical design](docs/DESIGN.md)
 - [Milestones and acceptance criteria](docs/ROADMAP.md)
 - [Repository setup and development conventions](docs/REPOSITORY.md)
+- [Milestone 1 verification](docs/VERIFICATION.md)
 
 ## Cost approach
 

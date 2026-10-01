@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.tools/
+artifacts/
+src-tauri/target/
+src-tauri/gen/
+src-tauri/icons/
+package-lock.json

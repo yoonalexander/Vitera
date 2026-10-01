@@ -1,8 +1,8 @@
 # CalPal design
 
-Status: initial proposal, ready for review. Date: 2026-09-30.
+Status: milestone 1 foundation implemented; later features remain proposed. Date: 2026-09-30.
 
-This document describes the intended product. Features, integrations, and packaging described here are not implemented yet. Platform and AI model choices remain provisional.
+This document describes the complete intended product. The Windows offline diary foundation is implemented in milestone 1; the roadmap identifies the remaining work. AI model selection remains provisional.
 
 ## 1. Product intent
 
@@ -32,7 +32,7 @@ The personal version is free to use, with no feature paywalls, advertisements, s
 
 ## 2. Platform and installation
 
-**Working assumption: Windows desktop first.** The user requested an installable app but has not yet specified a platform. Resolve this before app scaffolding. Desktop is a provisional recommendation based on the current Windows workspace and suitability for local AI, not a confirmed product requirement.
+**Selected platform: Windows desktop first.** The owner explicitly confirmed Windows desktop installation when authorizing milestone 1. Mobile options below are future alternatives.
 
 | Option | Installation | Design implication |
 | --- | --- | --- |
@@ -41,7 +41,7 @@ The personal version is free to use, with no feature paywalls, advertisements, s
 | iPhone first | Development or TestFlight/App Store distribution | Apple tooling, signing, and distribution requirements need a separate plan |
 | Installable web app | Browser installation where supported | Convenient access, but not equivalent to a native installer or desktop storage |
 
-For the Windows route, propose **Tauri 2 + React + TypeScript + SQLite**. Tauri supports Windows setup executables and MSI packages; the setup executable is the initial packaging target. See [Tauri Windows installer documentation](https://v2.tauri.app/distribute/windows-installer/).
+The foundation uses **Tauri 2 + React + TypeScript + SQLite**. The initial packaging target is a per-user Windows setup executable generated with NSIS. Tauri also supports MSI packages. See [Tauri Windows installer documentation](https://v2.tauri.app/distribute/windows-installer/).
 
 Application installation must not depend on AI installation. Manual features work immediately. Local AI setup is a separate optional step with clear model-download size, hardware needs, and readiness state. Do not silently install models or create a cloud account.
 
@@ -87,7 +87,7 @@ The review step shows item names, portions, calories, and a simple estimate indi
 
 ### Visual direction
 
-Use a neutral background, clear typography, generous spacing, and one muted accent color. Favor flat sections and quiet dividers. Avoid dense dashboards, competing cards, animations that delay entry, and punitive red states for exceeding a target. Exact palette and logo are open design decisions.
+Use a neutral background, clear typography, generous spacing, and one muted accent color. Favor flat sections and quiet dividers. Avoid dense dashboards, competing cards, animations that delay entry, and punitive red states for exceeding a target. The foundation uses a pale gray-green canvas (#f6f8f7), white surface, dark green-gray text (#20332f), and muted pine accent (#35685f), with a matching dark theme. Bahnschrift headings and Segoe UI body text use local Windows fonts. The app icon combines a C with the add-entry mark.
 
 Support keyboard entry, visible focus, screen-reader names, readable contrast, text scaling, and sufficiently large pointer/touch targets. Charts need numerical summaries. Color must never be the only indication of a state. Light and dark themes should share the same layout.
 
@@ -296,10 +296,10 @@ Check offline logging, persistence after restart, keyboard access, text scaling,
 
 ## 13. Decisions to resolve before implementation
 
-1. First platform: Windows installer, Android APK, or iPhone distribution.
+1. First platform resolved: Windows desktop installer, confirmed for milestone 1.
 2. Local AI suitability: device RAM/GPU, acceptable download size, and acceptable processing time.
 3. Whether hosted AI should be available initially, and which provider/model to benchmark.
 4. Preferred units, meal groups, metrics, and initial food-catalog coverage.
 5. Exact visual palette and whether to retain optional meal photos.
 
-Only the platform decision blocks choosing the app shell. Other decisions can use the defaults in this proposal and stay editable. No implementation milestone is authorized by this planning-only setup.
+The owner authorized milestone 1 and confirmed Windows desktop. Remaining decisions can use the defaults in this proposal and stay editable. Later milestones require separate requests; this implementation stops at the offline foundation.
