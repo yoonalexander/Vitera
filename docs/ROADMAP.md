@@ -1,6 +1,6 @@
 # CalPal roadmap
 
-Status: milestones 0–2 completed. Milestones 3–6 remain proposed and unimplemented.
+Status: milestones 0–3 completed. Milestones 4–6 remain proposed and unimplemented.
 
 Complete and verify one requested milestone at a time. Record actual results below the milestone when implemented; a proposed acceptance criterion is not a passed test.
 
@@ -43,6 +43,10 @@ Verification: 11 native tests and 3 frontend domain tests, TypeScript/production
 Acceptance: independently verify known calculation examples, serving/unit conversions, partial nutrient totals, local midnight/timezone behavior, and goal changes that leave historical days unchanged. Common repeat entries meet the friction target.
 
 ## Milestone 3 — Metrics and recipes
+
+Completed on 2026-10-01. Added weight, named body measurements, manually entered body-fat percentage and water records with editable timestamps, units, notes and multiple daily entries. Progress now includes period/unit selection, daily values, seven-day means with sample coverage, numerical history and charts that leave gaps for missing days. Added versioned recipes with ingredient snapshots, serving/measured-yield calculations and atomic saved-meal copies. Source and recipe edits preserve earlier logged nutrition.
+
+Verification: 18 native tests and 5 frontend domain tests passed, as did build/type checking, formatting and Rust linting. The installed offline workflow verified the independent 1,600 kcal / 4 servings / 800 g yield examples, mixed units, last daily measurement, honest chart gaps, recipe version history, saved-meal edits, accessibility, narrow/200% text layout, restart and reinstallation persistence. Opening the populated Milestone 2 database with the new executable preserved its records. See [Milestone 3 verification details](VERIFICATION-M3.md). AI and release/export work remain later milestones.
 
 - Add weight, body measurements, body-fat entries, and water tracking.
 - Add accessible history and trend summaries with missing-day coverage.

@@ -18,7 +18,22 @@ import {
   macroLabel,
   repeatInput,
   foodInput,
+  type Metric,
+  type MetricHistory,
+  type RecipeLibrary,
+  type Recipe,
+  type SavedMeal,
+  formatMetric,
 } from "./storage";
+import { MetricForm, MetricsPanel } from "./MetricsUI";
+import {
+  RecipesPanel,
+  RecipeForm,
+  RecipeLogForm,
+  SavedMealForm,
+  SavedMealLogForm,
+  RecipeHistory,
+} from "./RecipesUI";
 import { Modal } from "./Modal";
 import {
   FoodForm,
@@ -37,6 +52,28 @@ export function App() {
   const [library, setLibrary] = useState<Library>({ foods: [], recent: [] });
   const [week, setWeek] = useState<Week | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [recipeLibrary, setRecipeLibrary] = useState<RecipeLibrary>({
+    recipes: [],
+    savedMeals: [],
+  });
+  const [recipeEditor, setRecipeEditor] = useState<Recipe | null | undefined>(
+    undefined,
+  );
+  const [recipeLog, setRecipeLog] = useState<{
+    recipe: Recipe;
+    entry?: Entry;
+  } | null>(null);
+  const [recipeHistory, setRecipeHistory] = useState<string | null>(null);
+  const [mealEditor, setMealEditor] = useState<SavedMeal | null | undefined>(
+    undefined,
+  );
+  const [mealLog, setMealLog] = useState<SavedMeal | null>(null);
+  const [metricEditor, setMetricEditor] = useState<{
+    kind: string;
+    entry?: Metric;
+  } | null>(null);
+  const [metricToken, setMetricToken] = useState(0);
+  const [water, setWater] = useState<MetricHistory | null>(null);
   const [goalOpen, setGoalOpen] = useState(false);
   const [customFood, setCustomFood] = useState<Food | null | undefined>(
     undefined,
@@ -58,17 +95,21 @@ export function App() {
     const token = ++request.current;
     setLoading(true);
     try {
-      const [result, library, week, goals] = await Promise.all([
+      const [result, library, week, goals, recipes, water] = await Promise.all([
         storage.day(date),
         storage.library(),
         storage.week(date),
         storage.goals(),
+        storage.recipeLibrary(),
+        storage.metricHistory(date, 7, "water", "Water"),
       ]);
       if (token === request.current) {
         setDay(result);
         setLibrary(library);
         setWeek(week);
         setGoals(goals);
+        setRecipeLibrary(recipes);
+        setWater(water);
       }
     } catch (failure) {
       if (token === request.current) setError(String(failure));
@@ -148,6 +189,10 @@ export function App() {
 
   function edit(entry: Entry) {
     setError(null);
+    if (entry.recipePortion) {
+      setRecipeLog({ recipe: entry.recipePortion.recipe, entry });
+      return;
+    }
     setComposer({ id: entry.id, date: entry.date, meal: entry.meal, entry });
   }
 
@@ -155,6 +200,7 @@ export function App() {
     void mutate(async () => {
       await storage.save(input);
       setComposer(null);
+      setRecipeLog(null);
       setNotice(
         `Saved ${input.name.trim()}${input.date !== date ? ` to ${input.date}` : ""}.`,
       );
@@ -242,7 +288,12 @@ export function App() {
           !composer &&
           !settingsOpen &&
           !goalOpen &&
-          customFood === undefined && (
+          customFood === undefined &&
+          !metricEditor &&
+          recipeEditor === undefined &&
+          !recipeLog &&
+          mealEditor === undefined &&
+          !mealLog && (
             <div className="error" role="alert">
               {error}{" "}
               <button
@@ -415,6 +466,37 @@ export function App() {
                 </button>
               </div>
             </section>
+            <section
+              className="water-shortcuts"
+              aria-label="Water and measurements"
+            >
+              <div>
+                <h2>Water recorded</h2>
+                <p>
+                  {water?.points.at(-1)?.value === null || !water
+                    ? "Nothing recorded"
+                    : `${formatMetric(water.points.at(-1)!.value!)} ml recorded`}
+                </p>
+              </div>
+              <button
+                disabled={disabled}
+                onClick={() => {
+                  setError(null);
+                  setMetricEditor({ kind: "water" });
+                }}
+              >
+                Log water
+              </button>
+              <button
+                disabled={disabled}
+                onClick={() => {
+                  setError(null);
+                  setMetricEditor({ kind: "weight" });
+                }}
+              >
+                Log weight
+              </button>
+            </section>
             <section className="repeat-section" aria-label="Repeat foods">
               <h2>Log again</h2>
               <p className="muted">
@@ -551,7 +633,9 @@ export function App() {
                             <p className="entry-source">
                               {entry.foodPortion
                                 ? `${entry.foodPortion.quantity} ${entry.foodPortion.unit.startsWith("portion:") ? entry.foodPortion.food.portions[Number(entry.foodPortion.unit.slice(8))]?.label : entry.foodPortion.unit} · ${entry.foodPortion.food.state} · ${entry.foodPortion.food.source} · v${entry.foodPortion.food.version}`
-                                : "Manual entry"}
+                                : entry.recipePortion
+                                  ? `${entry.recipePortion.quantity} ${entry.recipePortion.unit} · ${entry.recipePortion.recipe.name} · recipe v${entry.recipePortion.recipe.version}`
+                                  : "Manual entry"}
                               {entry.energyType?.startsWith("derived")
                                 ? " · energy derived (4/4/9)"
                                 : ""}
@@ -593,28 +677,67 @@ export function App() {
         ) : page === "Progress" ? (
           <>
             <WeeklySummary week={week} />
-            <p className="storage-note muted">
-              Weight and body measurements are planned for milestone 3.
-            </p>
+            {native && (
+              <MetricsPanel
+                date={date}
+                onDate={setDate}
+                token={metricToken}
+                disabled={disabled}
+                onError={setError}
+                onAdd={(kind) => {
+                  setError(null);
+                  setMetricEditor({ kind });
+                }}
+                onEdit={(entry) => {
+                  setError(null);
+                  setMetricEditor({ kind: entry.kind, entry });
+                }}
+                onDelete={(entry) =>
+                  void mutate(async () => {
+                    await storage.deleteMetric(entry);
+                    setMetricToken((v) => v + 1);
+                    setNotice(`Deleted ${entry.label} record.`);
+                    await refresh();
+                  })
+                }
+              />
+            )}
             <button onClick={() => setPage("Today")}>Back to diary</button>
           </>
         ) : (
-          <section className="future-feature">
-            <div className="feature-symbol" aria-hidden="true">
-              {page === "Recipes" ? "≋" : "↗"}
-            </div>
-            <h2>
-              {page === "Recipes"
-                ? "Your favorites, ready to repeat."
-                : "A little progress, day by day."}
-            </h2>
-            <p>
-              {page === "Recipes"
-                ? "Recipe creation and reusable meals are planned for milestone 3. For now, log a meal and its calories in your diary."
-                : "Weight and body-measurement tracking are planned for milestone 3. Your calorie diary is ready to use today."}
-            </p>
+          <>
+            <RecipesPanel
+              library={recipeLibrary}
+              date={date}
+              disabled={disabled}
+              onCreate={() => {
+                setError(null);
+                setRecipeEditor(null);
+              }}
+              onEdit={(r) => {
+                setError(null);
+                setRecipeEditor(r);
+              }}
+              onLog={(recipe) => {
+                setError(null);
+                setRecipeLog({ recipe });
+              }}
+              onHistory={(r) => setRecipeHistory(r.id)}
+              onMealCreate={() => {
+                setError(null);
+                setMealEditor(null);
+              }}
+              onMealEdit={(m) => {
+                setError(null);
+                setMealEditor(m);
+              }}
+              onMealLog={(m) => {
+                setError(null);
+                setMealLog(m);
+              }}
+            />
             <button onClick={() => setPage("Today")}>Back to diary</button>
-          </section>
+          </>
         )}
         <footer className="app-footer">
           <span>
@@ -696,6 +819,110 @@ export function App() {
               await storage.saveGoal(goal);
               setGoalOpen(false);
               setNotice(`Target applied from ${goal.effectiveDate}.`);
+              await refresh();
+            })
+          }
+        />
+      )}
+      {metricEditor && (
+        <MetricForm
+          kind={metricEditor.kind}
+          entry={metricEditor.entry}
+          date={date}
+          busy={busy}
+          error={error}
+          onClose={() => {
+            setMetricEditor(null);
+            setError(null);
+          }}
+          onSave={(m) =>
+            void mutate(async () => {
+              await storage.saveMetric(m);
+              setMetricEditor(null);
+              setMetricToken((v) => v + 1);
+              setNotice(`Saved ${m.label} measurement.`);
+              await refresh();
+            })
+          }
+        />
+      )}
+      {recipeEditor !== undefined && (
+        <RecipeForm
+          recipe={recipeEditor}
+          foods={library.foods}
+          busy={busy}
+          error={error}
+          onClose={() => {
+            setRecipeEditor(undefined);
+            setError(null);
+          }}
+          onSave={(r) =>
+            void mutate(async () => {
+              await storage.saveRecipe(r);
+              setRecipeEditor(undefined);
+              setNotice(`Saved recipe ${r.name}.`);
+              await refresh();
+            })
+          }
+        />
+      )}
+      {recipeLog && (
+        <RecipeLogForm
+          recipe={recipeLog.recipe}
+          entry={recipeLog.entry}
+          date={date}
+          busy={busy}
+          error={error}
+          onClose={() => {
+            setRecipeLog(null);
+            setError(null);
+          }}
+          onSave={save}
+        />
+      )}
+      {recipeHistory && (
+        <RecipeHistory
+          id={recipeHistory}
+          busy={busy}
+          onClose={() => setRecipeHistory(null)}
+        />
+      )}
+      {mealEditor !== undefined && (
+        <SavedMealForm
+          meal={mealEditor}
+          entries={day?.entries ?? []}
+          date={date}
+          busy={busy}
+          error={error}
+          onClose={() => {
+            setMealEditor(undefined);
+            setError(null);
+          }}
+          onSave={(m) =>
+            void mutate(async () => {
+              await storage.saveMeal(m);
+              setMealEditor(undefined);
+              setNotice(`Saved meal ${m.name}.`);
+              await refresh();
+            })
+          }
+        />
+      )}
+      {mealLog && (
+        <SavedMealLogForm
+          meal={mealLog}
+          date={date}
+          busy={busy}
+          error={error}
+          onClose={() => {
+            setMealLog(null);
+            setError(null);
+          }}
+          onSave={(input) =>
+            void mutate(async () => {
+              await storage.logMeal(input);
+              setMealLog(null);
+              setNotice(`Logged ${input.savedMeal.name}.`);
               await refresh();
             })
           }

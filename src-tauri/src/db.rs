@@ -78,7 +78,7 @@ pub struct Settings {
 }
 
 pub struct Database {
-    connection: Connection,
+    pub(crate) connection: Connection,
 }
 
 fn sql_error(error: rusqlite::Error) -> String {
@@ -105,7 +105,7 @@ fn read_entry(row: &rusqlite::Row<'_>) -> rusqlite::Result<Entry> {
     })
 }
 
-fn validate_date(date: &str) -> Result<()> {
+pub(crate) fn validate_date(date: &str) -> Result<()> {
     let parsed = NaiveDate::parse_from_str(date, "%Y-%m-%d")
         .map_err(|_| "Choose a valid diary date.".to_string())?;
     if parsed.format("%Y-%m-%d").to_string() != date {
@@ -128,7 +128,7 @@ impl Database {
         let version: i64 = connection
             .query_row("PRAGMA user_version", [], |row| row.get(0))
             .map_err(sql_error)?;
-        if version > 2 {
+        if version > 3 {
             return Err(
                 "This database requires a newer CalPal version. Existing records were left intact."
                     .into(),
@@ -151,6 +151,16 @@ impl Database {
                 .map_err(sql_error)?;
             transaction
                 .pragma_update(None, "user_version", 2)
+                .map_err(sql_error)?;
+            transaction.commit().map_err(sql_error)?;
+        }
+        if version < 3 {
+            let transaction = connection.transaction().map_err(sql_error)?;
+            transaction
+                .execute_batch(include_str!("../migrations/003_metrics_recipes.sql"))
+                .map_err(sql_error)?;
+            transaction
+                .pragma_update(None, "user_version", 3)
                 .map_err(sql_error)?;
             transaction.commit().map_err(sql_error)?;
         }
@@ -203,10 +213,26 @@ impl Database {
                 |r| r.get(0),
             )
             .map_err(sql_error)?;
+        let mut protein = macro_total(entries.iter().map(|e| e.nutrition.protein));
+        let mut carbohydrate = macro_total(entries.iter().map(|e| e.nutrition.carbohydrate));
+        let mut fat = macro_total(entries.iter().map(|e| e.nutrition.fat));
+        for entry in &entries {
+            if let Some(c) = &entry.nutrition.macro_coverage {
+                if c.protein.known > 0 && c.protein.known < c.protein.total {
+                    protein.partial_entries += 1;
+                }
+                if c.carbohydrate.known > 0 && c.carbohydrate.known < c.carbohydrate.total {
+                    carbohydrate.partial_entries += 1;
+                }
+                if c.fat.known > 0 && c.fat.known < c.fat.total {
+                    fat.partial_entries += 1;
+                }
+            }
+        }
         Ok(Day {
-            protein: macro_total(entries.iter().map(|e| e.nutrition.protein)),
-            carbohydrate: macro_total(entries.iter().map(|e| e.nutrition.carbohydrate)),
-            fat: macro_total(entries.iter().map(|e| e.nutrition.fat)),
+            protein,
+            carbohydrate,
+            fat,
             entries,
             total_kcal,
             target,
@@ -228,14 +254,27 @@ impl Database {
             return Err("Calories must be a number between 0 and 100,000.".into());
         }
         if let Some(portion) = &input.nutrition.food_portion {
+            if input.nutrition.recipe_portion.is_some() {
+                return Err("Choose a food or recipe portion, not both.".into());
+            }
             let (values, kind) = portion.calculate()?;
             input.kcal = values.kcal.unwrap();
             input.nutrition.protein = values.protein;
             input.nutrition.carbohydrate = values.carbohydrate;
             input.nutrition.fat = values.fat;
             input.nutrition.energy_type = Some(kind);
+            input.nutrition.macro_coverage = None;
+        } else if let Some(portion) = &input.nutrition.recipe_portion {
+            let result = portion.calculate()?;
+            input.kcal = result.nutrients.kcal.unwrap();
+            input.nutrition.protein = result.nutrients.protein;
+            input.nutrition.carbohydrate = result.nutrients.carbohydrate;
+            input.nutrition.fat = result.nutrients.fat;
+            input.nutrition.macro_coverage = Some(result.coverage);
+            input.nutrition.energy_type = Some("recipe ingredient sum".into());
         } else {
             input.nutrition.energy_type = Some("manual".into());
+            input.nutrition.macro_coverage = None;
         }
         Nutrients {
             kcal: Some(input.kcal),
@@ -256,7 +295,7 @@ impl Database {
         let old_date = self.entry(&input.id)?.map(|e| e.date);
         // Capture the date's goal before logging; changing foods never changes this snapshot.
         self.day(&input.date)?;
-        let transaction = self.connection.transaction().map_err(sql_error)?;
+        let transaction = self.connection.savepoint().map_err(sql_error)?;
         let now = Utc::now().to_rfc3339();
         let changed_diary;
         match input.revision {
@@ -466,6 +505,7 @@ impl Database {
                 entry.name.clone(),
                 entry.kcal,
                 &entry.nutrition.food_portion,
+                &entry.nutrition.recipe_portion,
                 entry.nutrition.protein,
                 entry.nutrition.carbohydrate,
                 entry.nutrition.fat,
@@ -525,10 +565,10 @@ impl Database {
     }
 }
 
-fn json(value: &impl Serialize) -> Result<String> {
+pub(crate) fn json(value: &impl Serialize) -> Result<String> {
     serde_json::to_string(value).map_err(|e| e.to_string())
 }
-fn from_json<T: serde::de::DeserializeOwned>(value: &str) -> Result<T> {
+pub(crate) fn from_json<T: serde::de::DeserializeOwned>(value: &str) -> Result<T> {
     serde_json::from_str(value).map_err(|e| format!("Stored nutrition could not be read: {e}"))
 }
 

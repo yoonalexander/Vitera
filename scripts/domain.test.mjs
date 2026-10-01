@@ -1,6 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { localDate, shiftDate, macroLabel } from "../src/storage.ts";
+import {
+  localDate,
+  shiftDate,
+  macroLabel,
+  displayMetric,
+} from "../src/storage.ts";
 
 test("local calendar dates cross midnight without UTC date substitution", () => {
   process.env.TZ = "America/Toronto";
@@ -37,4 +42,22 @@ test("macro presentation distinguishes unknown, known zero and partial", () => {
     macroLabel({ known: 12.5, knownEntries: 1, totalEntries: 2 }),
     "12.5 g · partial (1/2 entries)",
   );
+});
+
+test("recipe ingredient coverage stays partial even when every entry contributes", () => {
+  assert.equal(
+    macroLabel({
+      known: 20,
+      knownEntries: 1,
+      totalEntries: 1,
+      partialEntries: 1,
+    }),
+    "20 g · partial (1/1 entries; some recipe ingredients unknown)",
+  );
+});
+test("metric display converts canonical values without changing stored precision", () => {
+  assert.ok(Math.abs(displayMetric(90.718474, "lb") - 200) < 1e-9);
+  assert.ok(Math.abs(displayMetric(81.28, "in") - 32) < 1e-9);
+  assert.equal(displayMetric(500, "l"), 0.5);
+  assert.ok(Math.abs(displayMetric(236.5882365, "fl oz (US)") - 8) < 1e-9);
 });

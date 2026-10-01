@@ -1,10 +1,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod db;
+mod metrics;
 mod nutrition;
+mod recipes;
 
 use db::{Database, Day, Entry, EntryInput, Library, Settings, Week};
+use metrics::{Metric, MetricHistory};
 use nutrition::{Estimate, EstimateInput, Food, FoodPortion, Goal, Nutrients};
+use recipes::{MealLog, Recipe, RecipeLibrary, RecipeNutrition, RecipePortion, SavedMeal};
 use std::sync::Mutex;
 use tauri::Manager;
 
@@ -106,6 +110,61 @@ fn get_week(end: String, state: tauri::State<'_, Storage>) -> Result<Week, Strin
     with_db(state, |db| db.week(&end))
 }
 
+#[tauri::command]
+fn save_metric(metric: Metric, state: tauri::State<'_, Storage>) -> Result<Metric, String> {
+    with_db(state, |db| db.save_metric(metric))
+}
+#[tauri::command]
+fn delete_metric(
+    id: String,
+    revision: i64,
+    state: tauri::State<'_, Storage>,
+) -> Result<(), String> {
+    with_db(state, |db| db.delete_metric(&id, revision))
+}
+#[tauri::command]
+fn get_metric_history(
+    end: String,
+    days: i64,
+    kind: String,
+    label: String,
+    state: tauri::State<'_, Storage>,
+) -> Result<MetricHistory, String> {
+    with_db(state, |db| db.metric_history(&end, days, &kind, &label))
+}
+#[tauri::command]
+fn get_metric_labels(state: tauri::State<'_, Storage>) -> Result<Vec<String>, String> {
+    with_db(state, |db| db.metric_labels())
+}
+#[tauri::command]
+fn get_recipe_library(state: tauri::State<'_, Storage>) -> Result<RecipeLibrary, String> {
+    with_db(state, |db| db.recipe_library())
+}
+#[tauri::command]
+fn get_recipe_history(id: String, state: tauri::State<'_, Storage>) -> Result<Vec<Recipe>, String> {
+    with_db(state, |db| db.recipe_history(Some(&id)))
+}
+#[tauri::command]
+fn save_recipe(recipe: Recipe, state: tauri::State<'_, Storage>) -> Result<Recipe, String> {
+    with_db(state, |db| db.save_recipe(recipe))
+}
+#[tauri::command]
+fn preview_recipe(recipe: Recipe) -> Result<RecipeNutrition, String> {
+    recipe.calculate()
+}
+#[tauri::command]
+fn preview_recipe_portion(portion: RecipePortion) -> Result<RecipeNutrition, String> {
+    portion.calculate()
+}
+#[tauri::command]
+fn save_meal(meal: SavedMeal, state: tauri::State<'_, Storage>) -> Result<SavedMeal, String> {
+    with_db(state, |db| db.save_meal(meal))
+}
+#[tauri::command]
+fn log_meal(input: MealLog, state: tauri::State<'_, Storage>) -> Result<Vec<Entry>, String> {
+    with_db(state, |db| db.log_meal(input))
+}
+
 fn main() {
     tauri::Builder::default()
         .setup(|app| {
@@ -130,7 +189,10 @@ fn main() {
             get_settings,
             save_settings,
             get_library, save_food, set_favorite, get_goals, save_goal,
-            preview_estimate, preview_portion, set_day_complete, get_week
+            preview_estimate, preview_portion, set_day_complete, get_week,
+            save_metric,delete_metric,get_metric_history,get_metric_labels,
+            get_recipe_library,get_recipe_history,save_recipe,preview_recipe,preview_recipe_portion,
+            save_meal,log_meal
         ])
         .run(tauri::generate_context!())
         .expect("CalPal could not start. Existing records have been left intact.");

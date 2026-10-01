@@ -161,6 +161,8 @@ pub struct NutritionSnapshot {
     pub food_portion: Option<FoodPortion>,
     pub timezone: Option<String>,
     pub energy_type: Option<String>,
+    pub recipe_portion: Option<crate::recipes::RecipePortion>,
+    pub macro_coverage: Option<crate::recipes::MacroCoverage>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -229,6 +231,7 @@ pub struct MacroTotal {
     pub known: f64,
     pub known_entries: usize,
     pub total_entries: usize,
+    pub partial_entries: usize,
 }
 
 pub fn macro_total(values: impl Iterator<Item = Option<f64>>) -> MacroTotal {
@@ -236,6 +239,7 @@ pub fn macro_total(values: impl Iterator<Item = Option<f64>>) -> MacroTotal {
         known: 0.0,
         known_entries: 0,
         total_entries: 0,
+        partial_entries: 0,
     };
     for value in values {
         result.total_entries += 1;

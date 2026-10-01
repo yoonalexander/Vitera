@@ -185,7 +185,7 @@ export async function nutritionSmoke(page, directory, accessibility) {
   return "Native offline target preview/application/history, custom portions/macros/snapshots, favorites, one-click recents, completion and weekly coverage";
 }
 
-export async function verifyNutritionPersistence(page) {
+export async function verifyNutritionPersistence(page, extraLoggedDays = 0) {
   await expect(page.getByTestId("daily-target")).toHaveText(
     "2,459 kcal · estimate",
   );
@@ -209,7 +209,9 @@ export async function verifyNutritionPersistence(page) {
   await page.getByRole("button", { name: "Progress", exact: true }).click();
   await expect(page.getByText("375 kcal average")).toBeVisible();
   await expect(
-    page.getByText("1/7 days complete · 2/7 days with entries"),
+    page.getByText(
+      `1/7 days complete · ${2 + extraLoggedDays}/7 days with entries`,
+    ),
   ).toBeVisible();
   await page.getByRole("button", { name: "Back to diary" }).click();
 }

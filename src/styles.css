@@ -54,7 +54,8 @@ body {
 }
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
   min-width: 0;
 }
@@ -380,7 +381,8 @@ label {
   margin-bottom: 18px;
 }
 input,
-select {
+select,
+textarea {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 7px;
@@ -389,6 +391,109 @@ select {
   padding: 10px 12px;
   width: 100%;
   font-weight: 400;
+}
+
+.section-toolbar,
+.water-shortcuts {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 20px 0;
+}
+.water-shortcuts {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+.water-shortcuts > div {
+  margin-right: auto;
+}
+.water-shortcuts p {
+  color: var(--muted);
+  margin-top: 8px;
+}
+.metrics-panel,
+.saved-meals {
+  margin: 36px 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.metric-controls {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+.metric-summary {
+  font-size: 1.125rem;
+  margin: 16px 0;
+  font-variant-numeric: tabular-nums;
+}
+.metric-chart {
+  margin: 24px 0;
+}
+.metric-chart svg {
+  display: block;
+  width: 100%;
+  background: var(--surface);
+  border-radius: 8px;
+}
+.metric-chart text {
+  font:
+    12px "Segoe UI",
+    sans-serif;
+  fill: var(--muted);
+}
+.chart-axis {
+  stroke: var(--line);
+}
+.chart-line {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+.chart-dot {
+  fill: var(--accent);
+}
+figcaption {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  padding-top: 12px;
+}
+.ingredient-row {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.recipe-yield {
+  margin-top: 28px;
+}
+.empty-note {
+  padding: 28px 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.checkbox-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  font-weight: 400;
+}
+.checkbox-label input {
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  flex-shrink: 0;
+}
+.instructions {
+  white-space: pre-wrap;
+  margin-top: 12px;
+}
+@media (max-width: 620px) {
+  .metric-controls {
+    grid-template-columns: 1fr;
+  }
 }
 .date-input {
   margin: 0;

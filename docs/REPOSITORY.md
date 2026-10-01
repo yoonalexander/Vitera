@@ -2,7 +2,7 @@
 
 ## Scope and state
 
-Milestones 1–2 implement the Windows offline diary, nutrition and calorie targets. The runtime, food catalog and lockfiles are included; generated installers, test records, and screenshots remain local and ignored. No paid services or AI credentials are configured.
+Milestones 1–3 implement the Windows offline diary, nutrition, calorie targets, metrics and recipes. The runtime, food catalog and lockfiles are included; generated installers, test records, and screenshots remain local and ignored. No paid services or AI credentials are configured.
 
 The owner confirmed Windows desktop. The stack is Tauri 2, React, TypeScript, Vite, and SQLite bundled through rusqlite. Exact resolved dependencies are in `package-lock.json` and `src-tauri/Cargo.lock`.
 
@@ -32,11 +32,13 @@ Current implementation:
 src/
   App.tsx         # diary, repeats, settings, navigation
   NutritionUI.tsx # food/custom-food forms, targets, weekly summaries
+  MetricsUI.tsx   # measurements, water, accessible trends and history
+  RecipesUI.tsx   # recipe versions/portions and reusable meals
   Modal.tsx       # shared keyboard-accessible native dialog
   storage.ts      # typed native command interface and date/display helpers
   styles.css      # responsive light/dark interface
 src-tauri/
-  src/            # native commands, SQLite persistence, storage tests
+  src/            # native commands, SQLite, nutrition/metric/recipe domains and tests
   migrations/     # ordered SQLite schema migrations
 scripts/          # build launcher and installed-app smoke checks
 catalog/          # immutable, attributed offline food-data versions
@@ -78,6 +80,8 @@ npm.cmd run test:installed
 ```
 
 Add `-- --nutrition` to run the Milestone 2 installed workflow, including source snapshots, target history, completion, and simulated local midnight with an open draft. Reinstallation verification for its successful isolated directory uses `npm.cmd run test:installed -- --verify-existing --nutrition`. These checks require the actual built/installed Windows executable, not a browser mock.
+
+For the complete Milestone 1–3 workflow, run `npm.cmd run test:installed -- --nutrition --metrics-recipes`. This checks actual recipe serving/weighed portions, ingredient and recipe version history, saved-meal copies, measurement units, multiple daily records, chart gaps and rolling-mean coverage. Reinstallation checks on its populated smoke directory use `-- --verify-existing --nutrition --metrics-recipes`. Migrations support the earlier schema versions without resetting records.
 
 The harness launches the actual executable, attaches Playwright to its WebView2 instance, simulates offline operation, and uses the real native SQLite commands. It creates isolated synthetic records, a separate WebView2 profile, screenshots, and results under ignored `artifacts/smoke-*`. It verifies add/edit/delete/undo, date separation, keyboard form submission, dialog focus, navigation, appearance persistence, accessibility in both themes, narrow/200% text layout, and restart persistence. Its temporary remote-debugging port is enabled only in the test child process; normal app launch does not enable it.
 

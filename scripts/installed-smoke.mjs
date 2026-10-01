@@ -8,6 +8,10 @@ import {
   nutritionSmoke,
   verifyNutritionPersistence,
 } from "./nutrition-smoke.mjs";
+import {
+  metricsRecipesSmoke,
+  verifyMetricsRecipesPersistence,
+} from "./metrics-recipes-smoke.mjs";
 
 // Tests the actual installed WebView2 application and native SQLite commands.
 // All diary records, browser profiles, and screenshots stay in an isolated directory.
@@ -144,6 +148,8 @@ try {
   }
   if (process.argv.includes("--nutrition") && !repeat)
     results.push(await nutritionSmoke(page, directory, accessibility));
+  if (process.argv.includes("--metrics-recipes") && !repeat)
+    results.push(await metricsRecipesSmoke(page, directory, accessibility));
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page
     .getByRole("combobox", { name: "Appearance" })
@@ -206,9 +212,18 @@ try {
     page.getByRole("button", { name: "Edit Smoke lunch" }),
   ).toBeVisible();
   if (process.argv.includes("--nutrition")) {
-    await verifyNutritionPersistence(page);
+    await verifyNutritionPersistence(
+      page,
+      process.argv.includes("--metrics-recipes") ? 1 : 0,
+    );
     results.push(
       "Restart preserves goals, favorites, custom food versions, original nutrition snapshots and completion coverage",
+    );
+  }
+  if (process.argv.includes("--metrics-recipes")) {
+    await verifyMetricsRecipesPersistence(page);
+    results.push(
+      "Restart preserves metrics, original recipe/ingredient snapshots, recipe versions and saved meal copies",
     );
   }
   expect(existsSync(join(dataDirectory, "calpal.sqlite3"))).toBe(true);

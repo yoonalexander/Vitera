@@ -35,6 +35,8 @@ export interface NutritionSnapshot {
   foodPortion: FoodPortion | null;
   timezone: string | null;
   energyType: string | null;
+  recipePortion?: RecipePortion | null;
+  macroCoverage?: MacroCoverage | null;
 }
 export interface EstimateInput {
   weightKg: number;
@@ -58,6 +60,7 @@ export interface MacroTotal {
   known: number;
   knownEntries: number;
   totalEntries: number;
+  partialEntries?: number;
 }
 export interface Library {
   foods: Food[];
@@ -129,6 +132,21 @@ export const storage = {
   complete: (date: string, complete: boolean) =>
     invoke<Day>("set_day_complete", { date, complete }),
   week: (end: string) => invoke<Week>("get_week", { end }),
+  saveMetric: (metric: Metric) => invoke<Metric>("save_metric", { metric }),
+  deleteMetric: (metric: Metric) =>
+    invoke<void>("delete_metric", { id: metric.id, revision: metric.revision }),
+  metricHistory: (end: string, days: number, kind: string, label: string) =>
+    invoke<MetricHistory>("get_metric_history", { end, days, kind, label }),
+  metricLabels: () => invoke<string[]>("get_metric_labels"),
+  recipeLibrary: () => invoke<RecipeLibrary>("get_recipe_library"),
+  recipeHistory: (id: string) => invoke<Recipe[]>("get_recipe_history", { id }),
+  saveRecipe: (recipe: Recipe) => invoke<Recipe>("save_recipe", { recipe }),
+  recipe: (recipe: Recipe) =>
+    invoke<RecipeNutrition>("preview_recipe", { recipe }),
+  recipePortion: (portion: RecipePortion) =>
+    invoke<RecipeNutrition>("preview_recipe_portion", { portion }),
+  saveMeal: (meal: SavedMeal) => invoke<SavedMeal>("save_meal", { meal }),
+  logMeal: (input: MealLog) => invoke<Entry[]>("log_meal", { input }),
 };
 
 export const timezone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -141,7 +159,15 @@ export const blankNutrition = (): NutritionSnapshot => ({
   energyType: null,
 });
 export function repeatInput(entry: Entry, date: string): EntryInput {
-  const { protein, carbohydrate, fat, foodPortion, energyType } = entry;
+  const {
+    protein,
+    carbohydrate,
+    fat,
+    foodPortion,
+    energyType,
+    recipePortion,
+    macroCoverage,
+  } = entry;
   return {
     id: crypto.randomUUID(),
     date,
@@ -155,6 +181,8 @@ export function repeatInput(entry: Entry, date: string): EntryInput {
       fat,
       foodPortion,
       energyType,
+      recipePortion,
+      macroCoverage,
       timezone: timezone(),
     },
   };
@@ -179,7 +207,123 @@ export function foodInput(food: Food, date: string): EntryInput {
 }
 export function macroLabel(total: MacroTotal): string {
   if (!total.totalEntries || !total.knownEntries) return "Unknown";
-  return `${total.known.toLocaleString(undefined, { maximumFractionDigits: 1 })} g${total.knownEntries < total.totalEntries ? ` · partial (${total.knownEntries}/${total.totalEntries} entries)` : ""}`;
+  return `${total.known.toLocaleString(undefined, { maximumFractionDigits: 1 })} g${total.knownEntries < total.totalEntries || total.partialEntries ? ` · partial (${total.knownEntries}/${total.totalEntries} entries${total.partialEntries ? "; some recipe ingredients unknown" : ""})` : ""}`;
+}
+
+export interface Metric {
+  id: string;
+  date: string;
+  recordedAt: string;
+  timezone: string;
+  kind: string;
+  label: string;
+  value: number;
+  unit: string;
+  canonicalValue: number;
+  note: string;
+  revision: number;
+}
+export interface MetricPoint {
+  date: string;
+  value: number | null;
+  mean: number | null;
+  meanSamples: number;
+  measurements: number;
+}
+export interface MetricHistory {
+  entries: Metric[];
+  points: MetricPoint[];
+  recordedDays: number;
+  change: number | null;
+  canonicalUnit: string;
+}
+export interface Recipe {
+  id: string;
+  version: number;
+  name: string;
+  instructions: string;
+  ingredients: FoodPortion[];
+  servings: number | null;
+  finishedYieldG: number | null;
+}
+export interface RecipePortion {
+  recipe: Recipe;
+  quantity: number;
+  unit: string;
+}
+export interface MacroCoverage {
+  protein: { known: number; total: number };
+  carbohydrate: { known: number; total: number };
+  fat: { known: number; total: number };
+}
+export interface RecipeNutrition {
+  nutrients: Nutrients;
+  coverage: MacroCoverage;
+}
+export interface MealItem {
+  name: string;
+  meal: Meal;
+  kcal: number;
+  nutrition: NutritionSnapshot;
+}
+export interface SavedMeal {
+  id: string;
+  version: number;
+  name: string;
+  items: MealItem[];
+}
+export interface RecipeLibrary {
+  recipes: Recipe[];
+  savedMeals: SavedMeal[];
+}
+export interface MealLog {
+  savedMeal: SavedMeal;
+  date: string;
+  meal: Meal | null;
+  entryIds: string[];
+  timezone: string;
+}
+export const metricUnits: Record<string, string[]> = {
+  weight: ["kg", "lb"],
+  measurement: ["cm", "in"],
+  bodyFat: ["%"],
+  water: ["ml", "l", "fl oz (US)"],
+};
+export function displayMetric(value: number, unit: string): number {
+  return (
+    value /
+    ({ lb: 0.45359237, in: 2.54, l: 1000, "fl oz (US)": 29.5735295625 }[unit] ??
+      1)
+  );
+}
+export const formatMetric = (value: number) =>
+  value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+export function mealItem(entry: Entry): MealItem {
+  const {
+    protein,
+    carbohydrate,
+    fat,
+    foodPortion,
+    recipePortion,
+    macroCoverage,
+    timezone,
+    energyType,
+  } = entry;
+  return {
+    name: entry.name,
+    meal: entry.meal,
+    kcal: entry.kcal,
+    nutrition: {
+      protein,
+      carbohydrate,
+      fat,
+      foodPortion,
+      recipePortion,
+      macroCoverage,
+      timezone,
+      energyType,
+    },
+  };
 }
 
 export function localDate(value = new Date()): string {
