@@ -1,0 +1,56 @@
+# Dependencies and build output
+node_modules/
+dist/
+build/
+coverage/
+target/
+.vite/
+src-tauri/gen/
+
+# Credentials and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+secrets/
+
+# Personal records, databases, photos, and exports
+data/
+user-data/
+uploads/
+exports/
+backups/
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+
+# AI model weights and caches
+models/
+*.gguf
+*.safetensors
+.cache/
+
+# Generated packages
+artifacts/
+*.exe
+*.msi
+*.apk
+*.aab
+*.dmg
+*.ipa
+
+# Machine-local and temporary files
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.log
+*.tmp
