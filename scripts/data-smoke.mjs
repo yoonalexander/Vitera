@@ -61,15 +61,18 @@ export async function dataExportSmoke(page, directory, accessibility) {
   const backup = JSON.parse(saved.data);
   expect(saved.path.endsWith(".vitera")).toBe(true);
   expect(backup.format).toBe("Vitera backup");
+  expect(backup.version).toBe(2);
+  expect(backup.schema).toBe(6);
   expect(backup.tables.length).toBe(12);
   expect(saved.data).not.toContain("credential_ref");
   expect(saved.data).not.toContain("credentialRef");
   // Exercise both the old extension and format through the actual restore UI.
-  await choose(
-    page,
-    "valid.calpal",
-    JSON.stringify({ ...backup, format: "CalPal backup" }),
-  );
+  const legacy = structuredClone(backup);
+  legacy.format = "CalPal backup";
+  legacy.version = 1;
+  legacy.schema = 5;
+  rowTable(legacy, "settings").rows[0].pop();
+  await choose(page, "valid.calpal", JSON.stringify(legacy));
   await expect(
     page.getByRole("heading", { name: "Backup ready to restore" }),
   ).toBeFocused();
@@ -125,6 +128,10 @@ export async function dataExportSmoke(page, directory, accessibility) {
   const negative = structuredClone(backup);
   rowTable(negative, "diary_entries").rows[0][4] = -1;
   cases.push(["negative", JSON.stringify(negative)]);
+  const invalidPalette = structuredClone(backup);
+  rowTable(invalidPalette, "settings").rows[0][2] =
+    '{"light":{"canvas":"url(x)"},"dark":null}';
+  cases.push(["invalid-palette", JSON.stringify(invalidPalette)]);
   if (rowTable(backup, "photo_attachments").rows.length) {
     const bad = structuredClone(backup);
     rowTable(bad, "photo_attachments").rows[0][1] = "invalid-image";
@@ -201,8 +208,13 @@ export async function dataImportSmoke(page, directory, source, accessibility) {
   await accessibility(page, "restore-dark");
   const restored = JSON.parse((await exported(page, directory, "backup")).data);
   for (const table of backup.tables) {
-    if (table.name !== "ai_config")
-      expect(rowTable(restored, table.name).rows).toEqual(table.rows);
+    if (table.name !== "ai_config") {
+      const expected =
+        table.name === "settings" && backup.schema === 5
+          ? table.rows.map((row) => [...row, null])
+          : table.rows;
+      expect(rowTable(restored, table.name).rows).toEqual(expected);
+    }
   }
   const config = JSON.parse(rowTable(restored, "ai_config").rows[0][1]);
   expect(config.enabled).toBe(false);
@@ -242,4 +254,15 @@ export async function dataImportSmoke(page, directory, source, accessibility) {
       2,
     ),
   );
+  const syntheticPhoto = rowTable(backup, "diary_entries").rows.find(
+    (row) => row[3] === "Reviewed photo banana",
+  );
+  const requestId = syntheticPhoto?.[9]
+    ? JSON.parse(syntheticPhoto[9]).ai?.requestId
+    : null;
+  return {
+    retainedPhoto: rowTable(backup, "photo_attachments").rows.some(
+      (row) => row[0] === requestId,
+    ),
+  };
 }

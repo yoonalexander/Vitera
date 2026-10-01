@@ -36,6 +36,9 @@ import {
 } from "./RecipesUI";
 import { Modal } from "./Modal";
 import { DataSettings } from "./DataUI";
+import { ColorPalette } from "./PaletteUI";
+import { applyAppearance, emptyPalettes } from "./palette";
+import "./palette.css";
 import { AISettings, DescriptionForm } from "./AIUI";
 import { ai } from "./ai";
 import {
@@ -82,8 +85,13 @@ export function App() {
     undefined,
   );
   const [today, setToday] = useState(localDate);
-  const [settings, setSettings] = useState<Settings>({ theme: "system" });
+  const [settings, setSettings] = useState<Settings>({
+    theme: "system",
+    palette: emptyPalettes(),
+  });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [palettePreview, setPalettePreview] = useState<Settings | null>(null);
   const [dataOpen, setDataOpen] = useState(false);
   const [composer, setComposer] = useState<Composer | null>(null);
   const [description, setDescription] = useState<{
@@ -174,8 +182,13 @@ export function App() {
   }, [native]);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = settings.theme;
-  }, [settings]);
+    const system = matchMedia("(prefers-color-scheme: dark)");
+    const apply = () =>
+      applyAppearance(palettePreview ?? settings, system.matches);
+    apply();
+    system.addEventListener("change", apply);
+    return () => system.removeEventListener("change", apply);
+  }, [settings, palettePreview]);
 
   async function mutate(action: () => Promise<void>) {
     if (mutating.current) return;
@@ -1005,7 +1018,7 @@ export function App() {
             setError(null);
           }}
           busy={busy}
-          active={!aiSettingsOpen && !dataOpen}
+          active={!aiSettingsOpen && !dataOpen && !paletteOpen}
         >
           <form
             onSubmit={(event) => {
@@ -1021,7 +1034,9 @@ export function App() {
                 onChange={(event) => {
                   const theme = event.target.value as Settings["theme"];
                   void mutate(async () => {
-                    setSettings(await storage.saveSettings({ theme }));
+                    setSettings(
+                      await storage.saveSettings({ ...settings, theme }),
+                    );
                   });
                 }}
               >
@@ -1030,6 +1045,15 @@ export function App() {
                 <option value="dark">Dark</option>
               </select>
             </label>
+            <button
+              type="button"
+              className="palette-settings-link"
+              disabled={busy}
+              onClick={() => setPaletteOpen(true)}
+            >
+              <span>Color palette</span>
+              <span>Custom colors for light and dark appearance →</span>
+            </button>
             <div className="storage-note">
               <h3>Your diary stays here.</h3>
               <p>
@@ -1075,6 +1099,22 @@ export function App() {
             setSettings(await storage.settings());
             setMetricToken((v) => v + 1);
             await refresh();
+          }}
+        />
+      )}
+      {paletteOpen && (
+        <ColorPalette
+          settings={settings}
+          canSave={native}
+          onPreview={setPalettePreview}
+          onClose={() => {
+            setPalettePreview(null);
+            setPaletteOpen(false);
+          }}
+          onSaved={(result) => {
+            setSettings(result);
+            setPalettePreview(null);
+            setPaletteOpen(false);
           }}
         />
       )}

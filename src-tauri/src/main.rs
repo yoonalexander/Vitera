@@ -6,6 +6,7 @@ mod db;
 mod file_dialog;
 mod metrics;
 mod nutrition;
+mod palette;
 mod photo;
 mod recipes;
 

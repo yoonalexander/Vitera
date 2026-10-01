@@ -87,7 +87,7 @@ The review step shows item names, portions, calories, and a simple estimate indi
 
 ### Visual direction
 
-Use a neutral background, clear typography, generous spacing, and one muted accent color. Favor flat sections and quiet dividers. Avoid dense dashboards, competing cards, animations that delay entry, and punitive red states for exceeding a target. The foundation uses a pale gray-green canvas (#f6f8f7), white surface, dark green-gray text (#20332f), and muted pine accent (#35685f), with a matching dark theme. Bahnschrift headings and Segoe UI body text use local Windows fonts. The app icon combines a C with the add-entry mark.
+Use clear typography, generous spacing and quiet dividers. Avoid dense dashboards, competing cards, animations that delay entry and punitive red states for exceeding a target. Forest remains the original preset, alongside Ocean, Plum, Ember and Slate. Users can customize twelve colors independently for light and dark appearance through **Settings → Color palette**, using a live preview and optional contrast guidance. The editor stays readable independently of the chosen colors. Bahnschrift headings and Segoe UI body text use local Windows fonts. The app icon is the cute Vitera monster. See [custom palettes](PALETTES.md).
 
 Support keyboard entry, visible focus, screen-reader names, readable contrast, text scaling, and sufficiently large pointer/touch targets. Charts need numerical summaries. Color must never be the only indication of a state. Light and dark themes should share the same layout.
 

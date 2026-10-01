@@ -322,7 +322,11 @@ export async function photoSmoke(page, directory, accessibility) {
   await page.getByLabel("Diary date", { exact: true }).fill(today);
 }
 
-export async function verifyPhotoPersistence(page, expectRetained = true) {
+export async function verifyPhotoPersistence(
+  page,
+  expectRetained = true,
+  removeRetained = true,
+) {
   const today = await page
     .getByLabel("Diary date", { exact: true })
     .inputValue();
@@ -336,7 +340,19 @@ export async function verifyPhotoPersistence(page, expectRetained = true) {
   await page.locator("summary").filter({ hasText: "Meal photo" }).click();
   if (expectRetained) {
     await expect(page.getByAltText("Retained meal photo")).toBeVisible();
-    await exact(page, "Remove retained photo").click();
+    if (removeRetained) await exact(page, "Remove retained photo").click();
+  }
+  if (expectRetained && !removeRetained) {
+    await page.keyboard.press("Escape");
+    const day = await invoke(page, "get_day", { date: dateBefore(today, 10) });
+    expect(day.totalKcal).toBe(89);
+    expect(
+      await invoke(page, "get_photo_attachment", {
+        requestId: day.entries[0].ai.requestId,
+      }),
+    ).not.toBeNull();
+    await page.getByLabel("Diary date", { exact: true }).fill(today);
+    return;
   }
   await expect(
     page.getByText("No photo retained. Only estimate provenance is stored.", {

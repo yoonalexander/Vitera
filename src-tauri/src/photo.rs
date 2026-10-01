@@ -315,7 +315,7 @@ mod tests {
         // Upgrade a schema-4 database while preserving its existing catalog.
         db.connection
             .execute_batch(
-                "DROP TABLE photo_attachments; DROP TABLE photo_saves; PRAGMA user_version=4;",
+                "DROP TABLE photo_attachments; DROP TABLE photo_saves; ALTER TABLE settings DROP COLUMN palette; PRAGMA user_version=4;",
             )
             .unwrap();
         drop(db);

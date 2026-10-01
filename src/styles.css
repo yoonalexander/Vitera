@@ -1,10 +1,12 @@
 :root {
   font-family: "Segoe UI", sans-serif;
-  color: #20332f;
-  background: #f6f8f7;
+  color: var(--ink);
+  background: var(--canvas);
   font-synthesis: none;
   --surface: #fff;
   --canvas: #f6f8f7;
+  --header: var(--canvas);
+  --header-ink: var(--ink);
   --ink: #20332f;
   --muted: #5c6b67;
   --line: #dce3df;
@@ -118,6 +120,8 @@ h3 {
   margin: auto;
 }
 .app-header {
+  background: var(--header);
+  color: var(--header-ink);
   display: flex;
   align-items: center;
   padding: 23px 40px;
@@ -146,8 +150,11 @@ nav {
 nav button {
   background: none;
   border-color: transparent;
-  color: var(--muted);
+  color: var(--header-ink);
   white-space: nowrap;
+}
+nav button:hover:not(:disabled) {
+  color: var(--ink);
 }
 nav .nav-active {
   color: var(--accent);

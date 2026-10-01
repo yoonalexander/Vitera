@@ -1,5 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import {
+  activePalette,
+  contrastRatio,
+  contrastChecks,
+  defaults,
+  normalizeColor,
+  presets,
+} from "../src/palette.ts";
 import { reviewRows, rowIssue } from "../src/ai.ts";
 import {
   localDate,
@@ -7,6 +15,45 @@ import {
   macroLabel,
   displayMetric,
 } from "../src/storage.ts";
+
+test("color input is normalized without accepting arbitrary CSS", () => {
+  assert.equal(normalizeColor(" #AbC "), "#aabbcc");
+  assert.equal(normalizeColor("2563EB"), "#2563eb");
+  for (const invalid of [
+    "",
+    "#ab",
+    "#12345678",
+    "red",
+    "url(https://invalid)",
+    "#12345g",
+  ])
+    assert.equal(normalizeColor(invalid), null);
+});
+test("custom palettes follow appearance and system changes independently", () => {
+  const light = presets[1].light,
+    dark = presets[2].dark;
+  const settings = { theme: "system", palette: { light, dark } };
+  assert.equal(activePalette(settings, false), light);
+  assert.equal(activePalette(settings, true), dark);
+  assert.equal(activePalette({ ...settings, theme: "light" }, true), light);
+  assert.equal(activePalette({ ...settings, theme: "dark" }, false), dark);
+  assert.equal(
+    activePalette({ ...settings, palette: { light: null, dark } }, false),
+    defaults.light,
+  );
+});
+test("contrast uses sRGB luminance and all starter palettes have readable text", () => {
+  assert.equal(contrastRatio("#000000", "#ffffff"), 21);
+  assert.equal(contrastRatio("#ffffff", "#ffffff"), 1);
+  assert.ok(Math.abs(contrastRatio("#777777", "#ffffff") - 4.478) < 0.001);
+  for (const preset of presets)
+    for (const mode of ["light", "dark"])
+      for (const check of contrastChecks(preset[mode]))
+        assert.ok(
+          check.ratio >= 4.5,
+          `${preset.name} ${mode} ${check.name}: ${check.ratio}`,
+        );
+});
 
 test("local calendar dates cross midnight without UTC date substitution", () => {
   process.env.TZ = "America/Toronto";

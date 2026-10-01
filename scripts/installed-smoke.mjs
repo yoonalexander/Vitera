@@ -15,6 +15,7 @@ import {
 } from "./metrics-recipes-smoke.mjs";
 import { aiSmoke, verifyAIPersistence, liveAiEvaluation } from "./ai-smoke.mjs";
 import { dataExportSmoke, dataImportSmoke } from "./data-smoke.mjs";
+import { paletteSmoke, verifyPalettePersistence } from "./palette-smoke.mjs";
 
 import {
   photoSmoke,
@@ -133,6 +134,7 @@ try {
   const existing = await total().textContent();
   const repeat = process.argv.includes("--verify-existing");
   const populated = repeat || process.argv.includes("--data-import");
+  let expectRetainedPhoto = !populated;
   if (!repeat) {
     await expect(total()).toHaveText("0");
     await page
@@ -174,12 +176,13 @@ try {
   if (process.argv.includes("--data-import")) {
     if (!environment("IMPORT_BACKUP"))
       throw new Error("Set VITERA_IMPORT_BACKUP for the restore test.");
-    await dataImportSmoke(
+    const imported = await dataImportSmoke(
       page,
       directory,
       environment("IMPORT_BACKUP"),
       accessibility,
     );
+    expectRetainedPhoto = imported.retainedPhoto;
     results.push(
       "Populated backup restored into fresh installation, every data table identical, AI disabled, recovery copy restored successfully",
     );
@@ -188,6 +191,8 @@ try {
     results.push(await metricsRecipesSmoke(page, directory, accessibility));
   if (process.argv.includes("--ai") && !populated)
     results.push(await aiSmoke(page, directory, accessibility));
+  if (process.argv.includes("--palette") && !populated)
+    results.push(await paletteSmoke(page, directory, accessibility));
   if (
     process.argv.includes("--ai-live") &&
     (!populated || process.argv.includes("--evaluate-live"))
@@ -275,6 +280,12 @@ try {
   await expect(
     page.getByRole("button", { name: "Edit Smoke lunch" }),
   ).toBeVisible();
+  if (process.argv.includes("--palette")) {
+    await verifyPalettePersistence(page);
+    results.push(
+      "Restart preserves every custom light/dark palette color and appearance changes keep both palettes",
+    );
+  }
   if (process.argv.includes("--nutrition")) {
     await verifyNutritionPersistence(
       page,
@@ -298,9 +309,11 @@ try {
     );
   }
   if (process.argv.includes("--photos")) {
-    await verifyPhotoPersistence(page, !populated);
+    await verifyPhotoPersistence(page, expectRetainedPhoto, !populated);
     results.push(
-      "Restart preserves retained JPEG/provenance; explicit removal keeps nutrition",
+      populated
+        ? "Restart preserves imported photo retention state and nutrition/provenance"
+        : "Restart preserves retained JPEG/provenance; explicit removal keeps nutrition",
     );
   }
   if (process.argv.includes("--photos-live")) {

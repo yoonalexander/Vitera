@@ -2,6 +2,7 @@ use crate::nutrition::{
     estimate, macro_total, valid_name, validate_target, Food, Goal, MacroTotal, Nutrients,
     NutritionSnapshot,
 };
+use crate::palette::Palettes;
 use chrono::{NaiveDate, Utc};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -72,9 +73,12 @@ pub struct Library {
     pub recent: Vec<Entry>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct Settings {
     pub theme: String,
+    #[serde(default)]
+    pub palette: Palettes,
 }
 
 pub struct Database {
@@ -128,7 +132,7 @@ impl Database {
         let version: i64 = connection
             .query_row("PRAGMA user_version", [], |row| row.get(0))
             .map_err(sql_error)?;
-        if version > 5 {
+        if version > 6 {
             return Err(
                 "This database requires a newer Vitera version. Existing records were left intact."
                     .into(),
@@ -181,6 +185,16 @@ impl Database {
                 .map_err(sql_error)?;
             transaction
                 .pragma_update(None, "user_version", 5)
+                .map_err(sql_error)?;
+            transaction.commit().map_err(sql_error)?;
+        }
+        if version < 6 {
+            let transaction = connection.transaction().map_err(sql_error)?;
+            transaction
+                .execute_batch(include_str!("../migrations/006_palettes.sql"))
+                .map_err(sql_error)?;
+            transaction
+                .pragma_update(None, "user_version", 6)
                 .map_err(sql_error)?;
             transaction.commit().map_err(sql_error)?;
         }
@@ -397,19 +411,41 @@ impl Database {
     }
 
     pub fn settings(&self) -> Result<Settings> {
-        self.connection
-            .query_row("SELECT theme FROM settings WHERE id=1", [], |row| {
-                Ok(Settings { theme: row.get(0)? })
+        let settings = self
+            .connection
+            .query_row("SELECT theme,palette FROM settings WHERE id=1", [], |row| {
+                let palette: Option<String> = row.get(1)?;
+                let palette = palette
+                    .map(|p| serde_json::from_str(&p))
+                    .transpose()
+                    .map_err(|e| {
+                        rusqlite::Error::FromSqlConversionFailure(
+                            1,
+                            rusqlite::types::Type::Text,
+                            Box::new(e),
+                        )
+                    })?
+                    .unwrap_or_default();
+                Ok(Settings {
+                    theme: row.get(0)?,
+                    palette,
+                })
             })
-            .map_err(sql_error)
+            .map_err(sql_error)?;
+        settings.palette.validate()?;
+        Ok(settings)
     }
 
     pub fn save_settings(&self, settings: Settings) -> Result<Settings> {
         if !["system", "light", "dark"].contains(&settings.theme.as_str()) {
             return Err("Choose a valid appearance.".into());
         }
+        settings.palette.validate()?;
         self.connection
-            .execute("UPDATE settings SET theme=?1 WHERE id=1", [&settings.theme])
+            .execute(
+                "UPDATE settings SET theme=?1,palette=?2 WHERE id=1",
+                params![settings.theme, json(&settings.palette)?],
+            )
             .map_err(sql_error)?;
         self.settings()
     }
@@ -628,6 +664,7 @@ mod tests {
             db.save(input(&id, "2026-09-30", 450.5, None)).unwrap();
             db.save_settings(Settings {
                 theme: "dark".into(),
+                palette: Palettes::default(),
             })
             .unwrap();
         }
@@ -684,9 +721,73 @@ mod tests {
         assert_eq!(db.day("2026-09-30").unwrap().entries.len(), 0);
         assert!(db
             .save_settings(Settings {
-                theme: "invalid".into()
+                theme: "invalid".into(),
+                palette: Palettes::default(),
             })
             .is_err());
+    }
+    #[test]
+    fn palette_settings_survive_restart_reject_invalid_colors_and_reset() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("palettes.sqlite3");
+        let saved = Settings {
+            theme: "system".into(),
+            palette: Palettes {
+                light: Some(crate::palette::fixture()),
+                dark: Some(crate::palette::fixture()),
+            },
+        };
+        {
+            let db = Database::open(&path).unwrap();
+            assert_eq!(db.save_settings(saved.clone()).unwrap(), saved);
+        }
+        let db = Database::open(&path).unwrap();
+        assert_eq!(db.settings().unwrap(), saved);
+        let mut invalid = saved.clone();
+        invalid.palette.dark.as_mut().unwrap().accent = "url(https://invalid)".into();
+        assert!(db.save_settings(invalid).is_err());
+        assert_eq!(db.settings().unwrap(), saved);
+        let reset = Settings {
+            theme: "system".into(),
+            palette: Palettes::default(),
+        };
+        assert_eq!(db.save_settings(reset.clone()).unwrap(), reset);
+    }
+    #[test]
+    fn schema_five_upgrade_preserves_appearance_and_diary_with_default_palettes() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("upgrade.sqlite3");
+        let entries;
+        {
+            let mut db = Database::open(&path).unwrap();
+            db.save(input(
+                &uuid::Uuid::new_v4().to_string(),
+                "2026-10-01",
+                321.0,
+                None,
+            ))
+            .unwrap();
+            entries = serde_json::to_value(db.day("2026-10-01").unwrap().entries).unwrap();
+            db.connection.execute_batch("UPDATE settings SET theme='dark'; ALTER TABLE settings DROP COLUMN palette; PRAGMA user_version=5;").unwrap();
+        }
+        let db = Database::open(&path).unwrap();
+        assert_eq!(
+            db.settings().unwrap(),
+            Settings {
+                theme: "dark".into(),
+                palette: Palettes::default()
+            }
+        );
+        assert_eq!(
+            serde_json::to_value(db.day("2026-10-01").unwrap().entries).unwrap(),
+            entries
+        );
+        assert_eq!(
+            db.connection
+                .query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
+                .unwrap(),
+            6
+        );
     }
 
     #[test]

@@ -4,6 +4,7 @@ use crate::{
     db::{validate_date, Database, EntryInput},
     metrics::{canonical, Metric},
     nutrition::{estimate, valid_name, validate_target, Food, Goal, Nutrients, NutritionSnapshot},
+    palette::Palettes,
     recipes::{Recipe, SavedMeal},
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
@@ -22,7 +23,7 @@ const MAX_ROWS: usize = 100_000;
 // Ordered for foreign keys. Column types: t=text, i=integer, r=real, j=nullable
 // JSON text, b=base64 blob. AI credential references are deliberately absent.
 const TABLES: &[(&str, &str, &str)] = &[
-    ("settings", "id,theme", "it"),
+    ("settings", "id,theme,palette", "itj"),
     ("foods", "id,record", "tt"),
     (
         "goal_versions",
@@ -154,12 +155,23 @@ fn input(e: &EntryInput) -> Result<()> {
 impl Backup {
     pub fn parse(data: &str) -> Result<Self> {
         require(data.len() <= MAX_BYTES)?;
-        let backup: Self = serde_json::from_str(data).map_err(|_| "Choose a complete Vitera .vitera or legacy .calpal backup. The file is invalid; current records are unchanged.".to_string())?;
+        let mut backup: Self = serde_json::from_str(data).map_err(|_| "Choose a complete Vitera .vitera or legacy .calpal backup. The file is invalid; current records are unchanged.".to_string())?;
         if !["Vitera backup", "CalPal backup"].contains(&backup.format.as_str())
-            || backup.version != 1
-            || backup.schema != 5
+            || ![(1, 5), (2, 6)].contains(&(backup.version, backup.schema))
         {
             return Err("This backup format requires a compatible Vitera version. Current records are unchanged.".into());
+        }
+        if backup.version == 1 {
+            require(backup.tables.len() == TABLES.len())?;
+            let settings = &mut backup.tables[0];
+            require(
+                settings.name == "settings"
+                    && settings.rows.len() == 1
+                    && settings.rows[0].len() == 2,
+            )?;
+            settings.rows[0].push(Value::Null);
+            backup.version = 2;
+            backup.schema = 6;
         }
         backup.validate()?;
         Ok(backup)
@@ -218,6 +230,9 @@ impl Backup {
                 && self.tables[0].rows[0][0] == 1
                 && ["system", "light", "dark"].contains(&text(&self.tables[0].rows[0], 1)?),
         )?;
+        if !self.tables[0].rows[0][2].is_null() {
+            record::<Palettes>(&self.tables[0].rows[0], 2)?.validate()?;
+        }
         for r in &self.tables[1].rows {
             let f: Food = record(r, 1)?;
             f.validate()?;
@@ -481,8 +496,8 @@ impl Database {
         }
         Ok(Backup {
             format: "Vitera backup".into(),
-            version: 1,
-            schema: 5,
+            version: 2,
+            schema: 6,
             created_at: chrono::Utc::now().to_rfc3339(),
             tables,
         })
@@ -683,6 +698,9 @@ mod tests {
         let expected = serde_json::to_value(&current.tables).unwrap();
         let mut legacy = current.clone();
         legacy.format = "CalPal backup".into();
+        legacy.version = 1;
+        legacy.schema = 5;
+        legacy.tables[0].rows[0].pop();
         let parsed = Backup::parse(&legacy.encode().unwrap()).unwrap();
         let mut target = db();
         let directory = tempfile::tempdir().unwrap();
@@ -692,6 +710,31 @@ mod tests {
         assert_eq!(serde_json::to_value(restored.tables).unwrap(), expected);
         legacy.format = "Unrelated backup".into();
         assert!(Backup::parse(&legacy.encode().unwrap()).is_err());
+    }
+    #[test]
+    fn palette_backups_roundtrip_and_invalid_settings_are_rejected_before_restore() {
+        let source = db();
+        let settings = crate::db::Settings {
+            theme: "dark".into(),
+            palette: Palettes {
+                light: Some(crate::palette::fixture()),
+                dark: Some(crate::palette::fixture()),
+            },
+        };
+        source.save_settings(settings.clone()).unwrap();
+        let backup = Backup::parse(&source.backup().unwrap().encode().unwrap()).unwrap();
+        assert_eq!((backup.version, backup.schema), (2, 6));
+        let mut target = db();
+        let directory = tempfile::tempdir().unwrap();
+        target.restore_backup(&backup, directory.path()).unwrap();
+        assert_eq!(target.settings().unwrap(), settings);
+        let mut invalid = backup.clone();
+        invalid.tables[0].rows[0][2] =
+            Value::String("{\"light\":{\"canvas\":\"url(x)\"},\"dark\":null}".into());
+        assert!(Backup::parse(&invalid.encode().unwrap()).is_err());
+        invalid.tables[0].rows[0].clear();
+        assert!(Backup::parse(&invalid.encode().unwrap()).is_err());
+        assert_eq!(target.settings().unwrap(), settings);
     }
     #[test]
     fn invalid_backups_and_recovery_failure_leave_records_intact() {

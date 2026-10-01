@@ -1,16 +1,18 @@
 # Vitera personal release
 
-Version 0.2.1 is an unsigned, per-user Windows x64 release. Manual food logging, local foods, recipes, targets and measurements work without an account, subscription, AI model or cloud key. See [release verification](VERIFICATION-M6.md) for the tested environment and limits.
+Version 0.2.2 is an unsigned, per-user Windows x64 release. Manual food logging, local foods, recipes, targets and measurements work without an account, subscription, AI model or cloud key. See [palette release verification](VERIFICATION-PALETTES.md) for the current checks, [original release verification](VERIFICATION-M6.md) for the milestone-6 environment and limits, and [custom palettes](PALETTES.md) for the latest settings feature.
 
 ## Install and upgrade
 
-Run `Vitera_0.2.1_x64-setup.exe` and launch Vitera from its installed shortcut. Windows may show a trust warning because this personal build is unsigned. No Node.js, Rust or Ollama installation is required to run the packaged app.
+Run `Vitera_0.2.2_x64-setup.exe` and launch Vitera from its installed shortcut. Windows may show a trust warning because this personal build is unsigned. No Node.js, Rust or Ollama installation is required to run the packaged app.
 
 Microsoft WebView2 Runtime is required. When it is absent, the installer downloads its bootstrapper and needs internet. For an offline machine, install Microsoft's x64 Evergreen Standalone Runtime first; Microsoft documents the [offline distribution option](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution). The app itself works offline after installation. Installing on a pristine VM without WebView2 has not been tested here.
 
 Before upgrading, save a complete backup. Close Vitera, run the newer installer into the same program folder, and launch it again. Data lives separately under `%APPDATA%\com.yoonalexander.calpal\calpal.sqlite3`; upgrading the program preserves it. Unsupported newer database schemas are refused without resetting records. Keep a copy of the older installer and your backup when trying a new release.
 
 Version 0.2.1 renames CalPal to Vitera. The installer retains the original Windows registration and data identity, updates its display name and replaces matching old shortcuts. Install into the existing program folder; its folder name may still be CalPal. Existing local records and optional OS credentials use the same storage. Historical verification reports retain their original build names and hashes. See [rename details](BRANDING.md).
+
+Version 0.2.2 adds **Settings → Color palette** and migrates settings to database schema 6. Existing records and appearance are preserved; default palettes are used until you customize them. Keep an older schema-5 backup before upgrading if you need to return to an earlier app build.
 
 For development, follow [repository setup](REPOSITORY.md). Build the personal-release installer with:
 
@@ -19,7 +21,7 @@ npm.cmd ci
 npm.cmd run tauri -- build
 ```
 
-Output: `src-tauri/target/release/bundle/nsis/Vitera_0.2.1_x64-setup.exe`. Generated installers stay outside Git. CI packages the release installer as a private workflow artifact; local checks do not confirm that a remote CI run passed.
+Output: `src-tauri/target/release/bundle/nsis/Vitera_0.2.2_x64-setup.exe`. Generated installers stay outside Git. CI packages the release installer as a private workflow artifact; local checks do not confirm that a remote CI run passed.
 
 ## Export and complete backups
 
@@ -33,7 +35,7 @@ Vitera also restores compatible legacy `.calpal` backups. Keep an older backup i
 
 Non-secret AI configuration travels with the backup. Secret values and credential references are excluded; Windows Credential Manager is never exported. Restore disables AI and generates a new credential reference so an imported configuration cannot reuse this installation's old authentication. If you no longer want the current optional token stored in Windows, remove it through AI settings before replacing the database. Restore does not delete old OS credentials automatically.
 
-Keep a copy somewhere separate from this device, especially before upgrades. Backups contain personal records and are not encrypted. Removing a retained photo later does not remove its bytes from earlier backups. Version 1 backups support schema 5, at most 64 MiB and 100,000 total rows. If export exceeds a limit, no backup file is written and records remain intact; do not treat CSV as a complete substitute.
+Keep a copy somewhere separate from this device, especially before upgrades. Backups contain personal records and are not encrypted. Removing a retained photo later does not remove its bytes from earlier backups. New version 2 backups support schema 6 and include both custom palettes; version 1/schema 5 backups remain readable. Both use limits of 64 MiB and 100,000 total rows. If export exceeds a limit, no backup file is written and records remain intact; do not treat CSV as a complete substitute.
 
 ## Restore and recovery
 

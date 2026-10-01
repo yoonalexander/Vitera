@@ -108,6 +108,7 @@ export interface Day {
 }
 export interface Settings {
   theme: Theme;
+  palette: import("./palette").Palettes;
 }
 
 export const storage = {

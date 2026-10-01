@@ -1,4 +1,10 @@
-import { useEffect, useRef, useId, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useId,
+  type ReactNode,
+  type CSSProperties,
+} from "react";
 
 export function Modal({
   title,
@@ -6,12 +12,16 @@ export function Modal({
   onClose,
   busy,
   active = true,
+  className,
+  style,
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   busy: boolean;
   active?: boolean;
+  className?: string;
+  style?: CSSProperties;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const lastFocus = useRef<HTMLElement | null>(null);
@@ -37,6 +47,8 @@ export function Modal({
   return (
     <dialog
       ref={ref}
+      className={className}
+      style={style}
       aria-labelledby={titleId}
       onCancel={(event) => {
         event.preventDefault();

@@ -10,7 +10,7 @@ Vitera takes inspiration from the food diary in MyFitnessPal and photo logging i
 
 Milestones 0–6 are complete. Vitera has an offline calorie/macro diary, local/custom foods and portions, favorites and recent entries, calorie targets with history, diary completion, weekly summaries, weight/body measurements/body-fat and water records, metric trends, versioned recipes and reusable saved meals. Optional local Ollama descriptions and photos produce editable drafts with assumptions, nutrition-source snapshots and reviewed transactional saving. Photos are resized and stripped of metadata, with local attachment retention off by default. Records persist in local SQLite. Diary/metric CSV exports, complete backups and validated replacement restores are available from Settings.
 
-The first platform is Windows desktop, confirmed by the owner. Built with Tauri 2, React, TypeScript, and bundled SQLite. Today logs foods and water, Recipes manages versioned recipes and saved meals, and Progress shows diary coverage and measurement history. AI defaults to off; see [local AI setup](docs/AI.md). Hosted AI is not configured. Version 0.2.1 is the personal release; see [installation, backup and recovery](docs/RELEASE.md).
+The first platform is Windows desktop, confirmed by the owner. Built with Tauri 2, React, TypeScript, and bundled SQLite. Today logs foods and water, Recipes manages versioned recipes and saved meals, and Progress shows diary coverage and measurement history. AI defaults to off; see [local AI setup](docs/AI.md). Hosted AI is not configured. Version 0.2.2 is the personal release; see [installation, backup and recovery](docs/RELEASE.md).
 
 ## Run and build
 
@@ -21,12 +21,13 @@ npm.cmd ci
 npm.cmd run tauri -- dev
 ```
 
-Create the release installer with `npm.cmd run tauri -- build`. Output: `src-tauri/target/release/bundle/nsis/Vitera_0.2.1_x64-setup.exe`. It is unsigned; Windows may show a trust prompt. WebView2 must be present for offline installation, or the installer will need internet to obtain it.
+Create the release installer with `npm.cmd run tauri -- build`. Output: `src-tauri/target/release/bundle/nsis/Vitera_0.2.2_x64-setup.exe`. It is unsigned; Windows may show a trust prompt. WebView2 must be present for offline installation, or the installer will need internet to obtain it.
 
 See [development and verification instructions](docs/REPOSITORY.md) for checks and isolated installed-app testing.
 
 ## Features
 
+- Custom light/dark color palettes with presets, pickers, hex inputs, live preview and contrast guidance.
 - Daily food diary, calorie totals, and optional protein, carbohydrate, and fat tracking.
 - Estimated maintenance calories and an editable daily target.
 - Weight, body measurements, water, and progress history.
@@ -37,6 +38,8 @@ See [development and verification instructions](docs/REPOSITORY.md) for checks a
 
 ## Documents
 
+- [Custom color palettes](docs/PALETTES.md)
+- [Custom palette release verification](docs/VERIFICATION-PALETTES.md)
 - [Vitera branding and rename compatibility](docs/BRANDING.md)
 - [Vitera rename verification](docs/VERIFICATION-RENAME.md)
 - [Product and technical design](docs/DESIGN.md)

@@ -73,7 +73,7 @@ npm.cmd run test:native
 npm.cmd run tauri -- build
 ```
 
-Install Rust formatting/lint components once with `rustup component add rustfmt clippy` if needed. The installer is generated at `src-tauri/target/release/bundle/nsis/Vitera_0.2.1_x64-setup.exe`. It is an optimized personal-release build, unsigned, and installs per user. WebView2 is required; the installer downloads its bootstrapper if it is absent. The application itself needs no network connection.
+Install Rust formatting/lint components once with `rustup component add rustfmt clippy` if needed. The installer is generated at `src-tauri/target/release/bundle/nsis/Vitera_0.2.2_x64-setup.exe`. It is an optimized personal-release build, unsigned, and installs per user. WebView2 is required; the installer downloads its bootstrapper if it is absent. The application itself needs no network connection.
 
 Ordinary app data resides under `%APPDATA%\com.yoonalexander.calpal\calpal.sqlite3`, separate from the install directory. Migrations run transactionally; unsupported newer schemas are refused without resetting records. Deletes are soft deletes, with Undo for the most recent deletion. See [release, backup and recovery](RELEASE.md) for complete export/restore.
 
@@ -108,6 +108,8 @@ Milestone 6 checks add `--data-export` to an existing populated smoke directory 
 The native schema is version 5, adding photo retention receipts and JPEG attachments to the version-4 AI configuration/save receipts. Originals and prepared temporary images are never written to a file; retained attachments are transactional SQLite blobs. See [Milestone 5 verification](VERIFICATION-M5.md) for source references, inference limitations and installer evidence.
 
 The harness launches the actual executable, attaches Playwright to its WebView2 instance, simulates offline operation, and uses the real native SQLite commands. It creates isolated synthetic records, a separate WebView2 profile, screenshots, and results under ignored `artifacts/smoke-*`. It verifies add/edit/delete/undo, date separation, keyboard form submission, dialog focus, navigation, appearance persistence, accessibility in both themes, narrow/200% text layout, and restart persistence. Its temporary remote-debugging port is enabled only in the test child process; normal app launch does not enable it.
+
+Add `--palette` on a fresh smoke directory to check custom light/dark colors, presets, hex/picker events, temporary preview, low-contrast guidance, invalid colors, cancel/reset, system appearance changes, narrow/200% text layout and persistence. Combine it with `--data-export` to verify palette backup data; reinstall checks reuse that directory with `--verify-existing --palette --data-export`. A version 2 backup from this run can be restored into a fresh isolated directory with `--data-import --palette` to check every saved color after restore and restart. The palette editor uses its own neutral colors during custom preview. See [palette behavior](PALETTES.md).
 
 To test preservation across a reinstall, reuse the successful smoke directory after reinstalling into the same program directory:
 
