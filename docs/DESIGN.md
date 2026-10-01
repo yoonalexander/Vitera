@@ -1,8 +1,8 @@
-# CalPal design
+# Vitera design
 
-Status: milestones 1–4 implemented; later features remain proposed. Date: 2026-10-01.
+Status: milestones 1–6 implemented; broader life-tracking and interactive mascot features remain proposed. Date: 2026-10-01.
 
-This document describes the complete intended product. The Windows offline diary, nutrition/targets, metrics and recipes are implemented in milestones 1–3. Milestone 4 adds optional local text descriptions with explicit review. The roadmap identifies the remaining work. AI models stay user-selectable; evaluation is recorded separately from application correctness.
+Vitera is a life-tracking app with a cute monster companion. Nutrition and body metrics form the first release. See [branding and rename compatibility](BRANDING.md) for the mascot direction and storage/installer continuity. The Windows offline diary, nutrition/targets, metrics, recipes, local AI text/photo drafts and backup/restore are implemented in milestones 1–6. AI models stay user-selectable; evaluation is recorded separately from application correctness.
 
 ## 1. Product intent
 
@@ -278,7 +278,7 @@ Use stable IDs. Logged nutrition and targets are snapshots; imported-source chan
 
 The default app stores records on the device and makes no AI request until AI is configured and invoked. No analytics or telemetry by default. Cloud mode sends the selected meal content and minimum context; body history is not needed for identifying a meal. Show which provider will receive content when cloud mode is enabled.
 
-Prepared photos stay in process memory while a draft is open and are cleared when replaced, removed, closed or saved. Original files are never copied to CalPal storage. Users may opt to retain a sanitized, resized JPEG in SQLite. Cloud-provider retention policies are separate and must be explained if hosted inference is implemented. Local storage is not automatically encrypted; an encrypted backup/database is a separate feature choice rather than an unsupported privacy claim.
+Prepared photos stay in process memory while a draft is open and are cleared when replaced, removed, closed or saved. Original files are never copied to Vitera storage. Users may opt to retain a sanitized, resized JPEG in SQLite. Cloud-provider retention policies are separate and must be explained if hosted inference is implemented. Local storage is not automatically encrypted; an encrypted backup/database is a separate feature choice rather than an unsupported privacy claim.
 
 Use OS credential storage for provider keys. Exclude keys from logs, Git, screenshots used for diagnostics, and exports. Do not bundle a developer's shared secret. Restrict provider endpoints to configured destinations; loopback is allowed for local AI, and remote traffic should use HTTPS.
 

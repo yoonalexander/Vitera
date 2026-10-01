@@ -130,7 +130,7 @@ impl Database {
             .map_err(sql_error)?;
         if version > 5 {
             return Err(
-                "This database requires a newer CalPal version. Existing records were left intact."
+                "This database requires a newer Vitera version. Existing records were left intact."
                     .into(),
             );
         }

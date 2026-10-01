@@ -817,7 +817,7 @@ export function GoalForm({
               </label>
               <p className="muted">
                 0 for maintenance; negative for loss or positive for gain.
-                CalPal does not choose an adjustment or predict a weight-change
+                Vitera does not choose an adjustment or predict a weight-change
                 date.
               </p>
               <button

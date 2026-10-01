@@ -6,10 +6,12 @@ Milestones 1–6 implement the Windows offline diary, nutrition, calorie targets
 
 The owner confirmed Windows desktop. The stack is Tauri 2, React, TypeScript, Vite, and SQLite bundled through rusqlite. Exact resolved dependencies are in `package-lock.json` and `src-tauri/Cargo.lock`.
 
+The product is now Vitera. The database, Tauri identifier and Windows registration retain their original internal identity for upgrades. Use `VITERA_*` development overrides; `CALPAL_*` remains supported as a fallback. See [rename compatibility](BRANDING.md) before changing identifiers or the pinned NSIS template.
+
 ## Git conventions
 
 - Default branch: `main`.
-- Connected origin: `https://github.com/yoonalexander/CalPal.git`.
+- Connected origin: `https://github.com/yoonalexander/Vitera.git`.
 - Verified visibility: private, appropriate for the initial personal project.
 - Use focused commits. Do not rewrite or discard intentional local work.
 - Commit code, documentation, and reproducible dependency locks; exclude generated output and personal records.
@@ -71,7 +73,7 @@ npm.cmd run test:native
 npm.cmd run tauri -- build
 ```
 
-Install Rust formatting/lint components once with `rustup component add rustfmt clippy` if needed. The installer is generated at `src-tauri/target/release/bundle/nsis/CalPal_0.2.0_x64-setup.exe`. It is an optimized personal-release build, unsigned, and installs per user. WebView2 is required; the installer downloads its bootstrapper if it is absent. The application itself needs no network connection.
+Install Rust formatting/lint components once with `rustup component add rustfmt clippy` if needed. The installer is generated at `src-tauri/target/release/bundle/nsis/Vitera_0.2.1_x64-setup.exe`. It is an optimized personal-release build, unsigned, and installs per user. WebView2 is required; the installer downloads its bootstrapper if it is absent. The application itself needs no network connection.
 
 Ordinary app data resides under `%APPDATA%\com.yoonalexander.calpal\calpal.sqlite3`, separate from the install directory. Migrations run transactionally; unsupported newer schemas are refused without resetting records. Deletes are soft deletes, with Undo for the most recent deletion. See [release, backup and recovery](RELEASE.md) for complete export/restore.
 
@@ -80,7 +82,7 @@ Ordinary app data resides under `%APPDATA%\com.yoonalexander.calpal\calpal.sqlit
 Install into a fresh test directory and set the executable path, then run:
 
 ```powershell
-$env:CALPAL_EXE = 'C:\path\to\test-install\calpal.exe'
+$env:VITERA_EXE = 'C:\path\to\test-install\vitera.exe'
 npm.cmd run test:installed
 ```
 
@@ -88,7 +90,7 @@ Add `-- --nutrition` to run the Milestone 2 installed workflow, including source
 
 For the complete Milestone 1–3 workflow, run `npm.cmd run test:installed -- --nutrition --metrics-recipes`. This checks actual recipe serving/weighed portions, ingredient and recipe version history, saved-meal copies, measurement units, multiple daily records, chart gaps and rolling-mean coverage. Reinstallation checks on its populated smoke directory use `-- --verify-existing --nutrition --metrics-recipes`. Migrations support the earlier schema versions without resetting records.
 
-Add `--ai` to include the installed Milestone 4 fixture workflow. It serves synthetic Ollama replies on an ephemeral loopback port and calls the actual native adapter, review UI and SQLite storage; it does not substitute browser calculation/storage mocks. Add `--ai-live` to separately evaluate a running real local Ollama model and its visible review/save flow. `CALPAL_OLLAMA_MODEL` selects the installed model (default `gemma3:4b`); the live run never pulls a model. Example: `npm.cmd run test:installed -- --nutrition --metrics-recipes --ai --ai-live`. The live evaluation writes raw synthetic-meal results into ignored artifacts; valid drafts and measured errors are reported separately.
+Add `--ai` to include the installed Milestone 4 fixture workflow. It serves synthetic Ollama replies on an ephemeral loopback port and calls the actual native adapter, review UI and SQLite storage; it does not substitute browser calculation/storage mocks. Add `--ai-live` to separately evaluate a running real local Ollama model and its visible review/save flow. `VITERA_OLLAMA_MODEL` selects the installed model (default `gemma3:4b`); the live run never pulls a model. Example: `npm.cmd run test:installed -- --nutrition --metrics-recipes --ai --ai-live`. The live evaluation writes raw synthetic-meal results into ignored artifacts; valid drafts and measured errors are reported separately.
 
 Reinstallation checks use `-- --verify-existing --nutrition --metrics-recipes --ai`. For a deliberate additional real-model text comparison on that isolated directory, also add `--ai-live --evaluate-live`; only its specifically named synthetic live-review entries are replaced. See [AI setup](AI.md) and [Milestone 4 verification](VERIFICATION-M4.md).
 
@@ -99,9 +101,9 @@ node scripts/fetch-photo-benchmark.mjs
 npm.cmd run test:installed -- --nutrition --metrics-recipes --ai --photos --photos-live
 ```
 
-The downloader is a developer script, never invoked by the application. It saves dataset photos and reference portions/calories under ignored `artifacts/photo-benchmark`. The live test defaults to the already installed `gemma3:4b` for vision and `gemma4:e4b-it-q8_0` for structured drafts; `CALPAL_VISION_MODEL` and `CALPAL_DRAFT_MODEL` select other installed models. It records uncorrected drafts and actual errors separately from manually corrected diary saves. It never downloads an AI model. Reinstall checks on a successful full smoke directory use `-- --verify-existing --nutrition --metrics-recipes --ai --photos --photos-live`; this validates stored values and retained images without repeating inference. Additional live photo runs should use a fresh smoke directory to avoid adding repeated evaluation entries.
+The downloader is a developer script, never invoked by the application. It saves dataset photos and reference portions/calories under ignored `artifacts/photo-benchmark`. The live test defaults to the already installed `gemma3:4b` for vision and `gemma4:e4b-it-q8_0` for structured drafts; `VITERA_VISION_MODEL` and `VITERA_DRAFT_MODEL` select other installed models. It records uncorrected drafts and actual errors separately from manually corrected diary saves. It never downloads an AI model. Reinstall checks on a successful full smoke directory use `-- --verify-existing --nutrition --metrics-recipes --ai --photos --photos-live`; this validates stored values and retained images without repeating inference. Additional live photo runs should use a fresh smoke directory to avoid adding repeated evaluation entries.
 
-Milestone 6 checks add `--data-export` to an existing populated smoke directory to verify CSV/backup files, invalid imports, preview cancellation and accessibility. The child process alone receives `CALPAL_EXPORT_DIR` alongside its isolated `CALPAL_DATA_DIR`; production launches use the Windows save dialog. For restore, set `CALPAL_IMPORT_BACKUP` to a previously exported populated `.calpal` file and run a fresh smoke directory with `--data-import --nutrition --metrics-recipes --ai --photos --photos-live`. That mode initializes a synthetic replacement record, restores/re-recovers the backup, compares all data tables and checks existing records after restart; it does not rerun model inference. See [Milestone 6 results and limits](VERIFICATION-M6.md).
+Milestone 6 checks add `--data-export` to an existing populated smoke directory to verify CSV/backup files, invalid imports, preview cancellation and accessibility. The child process alone receives `VITERA_EXPORT_DIR` alongside its isolated `VITERA_DATA_DIR`; production launches use the Windows save dialog. For restore, set `VITERA_IMPORT_BACKUP` to a previously exported populated `.vitera` file and run a fresh smoke directory with `--data-import --nutrition --metrics-recipes --ai --photos --photos-live`. That mode initializes a synthetic replacement record, restores/re-recovers the backup, compares all data tables and checks existing records after restart; it does not rerun model inference. See [Milestone 6 results and limits](VERIFICATION-M6.md).
 
 The native schema is version 5, adding photo retention receipts and JPEG attachments to the version-4 AI configuration/save receipts. Originals and prepared temporary images are never written to a file; retained attachments are transactional SQLite blobs. See [Milestone 5 verification](VERIFICATION-M5.md) for source references, inference limitations and installer evidence.
 
@@ -110,11 +112,11 @@ The harness launches the actual executable, attaches Playwright to its WebView2 
 To test preservation across a reinstall, reuse the successful smoke directory after reinstalling into the same program directory:
 
 ```powershell
-$env:CALPAL_SMOKE_DIR = 'C:\path\to\CalPal\artifacts\smoke-example'
+$env:VITERA_SMOKE_DIR = 'C:\path\to\Vitera\artifacts\smoke-example'
 npm.cmd run test:installed -- --verify-existing
 ```
 
-The `CALPAL_DATA_DIR` environment override is intended for isolated development/testing. It changes the native data directory for that process only; the harness never writes test meals into the normal personal diary. CI performs formatting, build, native tests, Rust linting, and installer packaging, then uploads the installer as a private workflow artifact. Installed UI checks run locally, separately from CI.
+The `VITERA_DATA_DIR` environment override is intended for isolated development/testing. It changes the native data directory for that process only; the harness never writes test meals into the normal personal diary. CI performs formatting, build, native tests, Rust linting, and installer packaging, then uploads the installer as a private workflow artifact. Installed UI checks run locally, separately from CI.
 
 Report checks distinctly: document verification, unit/integration checks, live-provider evaluation, runtime use, and installer testing. Passing one does not establish the others.
 

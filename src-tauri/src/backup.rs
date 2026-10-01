@@ -154,9 +154,12 @@ fn input(e: &EntryInput) -> Result<()> {
 impl Backup {
     pub fn parse(data: &str) -> Result<Self> {
         require(data.len() <= MAX_BYTES)?;
-        let backup: Self = serde_json::from_str(data).map_err(|_| "Choose a complete CalPal .calpal backup. The file is invalid; current records are unchanged.".to_string())?;
-        if backup.format != "CalPal backup" || backup.version != 1 || backup.schema != 5 {
-            return Err("This backup format requires a compatible CalPal version. Current records are unchanged.".into());
+        let backup: Self = serde_json::from_str(data).map_err(|_| "Choose a complete Vitera .vitera or legacy .calpal backup. The file is invalid; current records are unchanged.".to_string())?;
+        if !["Vitera backup", "CalPal backup"].contains(&backup.format.as_str())
+            || backup.version != 1
+            || backup.schema != 5
+        {
+            return Err("This backup format requires a compatible Vitera version. Current records are unchanged.".into());
         }
         backup.validate()?;
         Ok(backup)
@@ -434,7 +437,7 @@ fn replace(conn: &Connection, backup: &Backup) -> Result<()> {
 
 impl Database {
     pub fn backup(&self) -> Result<Backup> {
-        // A read transaction also protects against another CalPal process
+        // A read transaction also protects against another Vitera process
         // committing a write between table reads. The in-process mutex alone
         // cannot provide that guarantee.
         let snapshot = if self.connection.is_autocommit() {
@@ -477,7 +480,7 @@ impl Database {
             snapshot.commit().map_err(err)?;
         }
         Ok(Backup {
-            format: "CalPal backup".into(),
+            format: "Vitera backup".into(),
             version: 1,
             schema: 5,
             created_at: chrono::Utc::now().to_rfc3339(),
@@ -495,7 +498,7 @@ impl Database {
         .map_err(err)?;
         let previous = self.backup()?.encode()?;
         std::fs::create_dir_all(directory).map_err(|_|"Could not create the recovery folder. Restore was cancelled; current records are unchanged.")?;
-        let recovery = directory.join(format!("before-restore-{}.calpal", uuid::Uuid::new_v4()));
+        let recovery = directory.join(format!("before-restore-{}.vitera", uuid::Uuid::new_v4()));
         write_atomic(&recovery, previous.as_bytes())?;
         replace(&tx, backup)?;
         tx.commit().map_err(err)?;
@@ -672,6 +675,25 @@ mod tests {
         );
     }
     #[test]
+    fn vitera_reads_legacy_calpal_backups_without_changing_records() {
+        let mut source = db();
+        add(&mut source, "Before the rename");
+        let current = source.backup().unwrap();
+        assert_eq!(current.format, "Vitera backup");
+        let expected = serde_json::to_value(&current.tables).unwrap();
+        let mut legacy = current.clone();
+        legacy.format = "CalPal backup".into();
+        let parsed = Backup::parse(&legacy.encode().unwrap()).unwrap();
+        let mut target = db();
+        let directory = tempfile::tempdir().unwrap();
+        target.restore_backup(&parsed, directory.path()).unwrap();
+        let restored = target.backup().unwrap();
+        assert_eq!(restored.format, "Vitera backup");
+        assert_eq!(serde_json::to_value(restored.tables).unwrap(), expected);
+        legacy.format = "Unrelated backup".into();
+        assert!(Backup::parse(&legacy.encode().unwrap()).is_err());
+    }
+    #[test]
     fn invalid_backups_and_recovery_failure_leave_records_intact() {
         let mut target = db();
         add(&mut target, "Keep me");
@@ -736,14 +758,14 @@ mod tests {
     #[test]
     fn atomic_export_replaces_complete_files_and_cleans_up_on_failure() {
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("backup.calpal");
+        let path = dir.path().join("backup.vitera");
         std::fs::write(&path, "old").unwrap();
         write_atomic(&path, b"complete replacement").unwrap();
         assert_eq!(
             std::fs::read_to_string(&path).unwrap(),
             "complete replacement"
         );
-        let folder = dir.path().join("folder.calpal");
+        let folder = dir.path().join("folder.vitera");
         std::fs::create_dir(&folder).unwrap();
         assert!(write_atomic(&folder, b"fail").is_err());
         assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 2);

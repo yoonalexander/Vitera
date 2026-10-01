@@ -190,7 +190,7 @@ export function AISettings({ onClose }: { onClose: () => void }) {
               <p className="muted">
                 Standard local Ollama needs no token. A token for an
                 authenticated local proxy is held in Windows Credential Manager,
-                separate from diary data. CalPal never displays the saved token.
+                separate from diary data. Vitera never displays the saved token.
               </p>
               <p role="status">
                 {hasToken
@@ -241,7 +241,7 @@ export function AISettings({ onClose }: { onClose: () => void }) {
           </fieldset>
           <p className="storage-note muted">
             Install and start Ollama separately, then choose a downloaded local
-            model. CalPal does not download models or switch to a cloud service.
+            model. Vitera does not download models or switch to a cloud service.
           </p>
           {error && (
             <p role="alert" className="error">
@@ -961,7 +961,7 @@ export function DescriptionForm({
             {draft?.photo && (
               <p className="source-note">
                 Retention is off by default. Closing this draft clears its
-                temporary photo from CalPal memory. A retained photo is shared
+                temporary photo from Vitera memory. A retained photo is shared
                 by these items and can be removed from Edit food.
               </p>
             )}

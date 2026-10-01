@@ -1,3 +1,4 @@
+import { environment } from "./environment.mjs";
 import { expect } from "@playwright/test";
 import { createServer } from "node:http";
 import { writeFileSync } from "node:fs";
@@ -306,7 +307,7 @@ export async function liveAiEvaluation(page, directory, accessibility) {
     enabled: true,
     provider: "ollama",
     port: 11434,
-    model: process.env.CALPAL_OLLAMA_MODEL ?? "gemma3:4b",
+    model: environment("OLLAMA_MODEL") ?? "gemma3:4b",
     timeoutSeconds: 180,
   };
   await invoke(page, "save_ai_config", { config });

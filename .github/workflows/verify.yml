@@ -30,6 +30,6 @@ jobs:
       - run: npm.cmd run tauri -- build
       - uses: actions/upload-artifact@v4
         with:
-          name: CalPal-Windows-personal-release-installer
+          name: Vitera-Windows-personal-release-installer
           path: src-tauri/target/release/bundle/nsis/*-setup.exe
           if-no-files-found: error

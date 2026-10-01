@@ -12,7 +12,7 @@ async function open(page) {
   ).toBeFocused();
 }
 async function choose(page, name, data) {
-  await page.getByLabel("Choose CalPal backup").setInputFiles({
+  await page.getByLabel("Choose Vitera backup").setInputFiles({
     name,
     mimeType: "application/json",
     buffer: Buffer.from(data),
@@ -59,10 +59,17 @@ export async function dataExportSmoke(page, directory, accessibility) {
   expect(metrics.data).toContain('"canonical_value"');
   const saved = await exported(page, directory, "backup");
   const backup = JSON.parse(saved.data);
+  expect(saved.path.endsWith(".vitera")).toBe(true);
+  expect(backup.format).toBe("Vitera backup");
   expect(backup.tables.length).toBe(12);
   expect(saved.data).not.toContain("credential_ref");
   expect(saved.data).not.toContain("credentialRef");
-  await choose(page, "valid.calpal", saved.data);
+  // Exercise both the old extension and format through the actual restore UI.
+  await choose(
+    page,
+    "valid.calpal",
+    JSON.stringify({ ...backup, format: "CalPal backup" }),
+  );
   await expect(
     page.getByRole("heading", { name: "Backup ready to restore" }),
   ).toBeFocused();

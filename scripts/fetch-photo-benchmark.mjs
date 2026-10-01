@@ -1,10 +1,11 @@
-// Explicit developer fixture download; never part of CalPal startup or inference.
+import { environment } from "./environment.mjs";
+// Explicit developer fixture download; never part of Vitera startup or inference.
 // Nutrition5k, Thames et al., CVPR 2021, CC BY 4.0.
 // https://github.com/google-research-datasets/Nutrition5k
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 const directory = resolve(
-  process.env.CALPAL_PHOTO_BENCHMARK ?? "artifacts/photo-benchmark",
+  environment("PHOTO_BENCHMARK") ?? "artifacts/photo-benchmark",
 );
 mkdirSync(directory, { recursive: true });
 const base =

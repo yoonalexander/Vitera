@@ -1,4 +1,6 @@
-# CalPal roadmap
+# Vitera roadmap
+
+Renamed from CalPal on 2026-10-01. Vitera is a life tracker with a cute monster companion; milestones 0–6 establish its nutrition and body-metric foundation. See [branding](BRANDING.md). Historical completion notes retain the names used by their tested builds.
 
 Status: milestones 0–6 completed. The personal Windows release is version 0.2.0; verification limits are recorded below.
 

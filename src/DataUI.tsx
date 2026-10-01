@@ -73,7 +73,7 @@ export function DataSettings({
     await invoke("discard_backup");
     if (file.size > 64 * 1024 * 1024)
       throw new Error(
-        "Choose a CalPal backup no larger than 64 MiB. Current records are unchanged.",
+        "Choose a Vitera backup no larger than 64 MiB. Current records are unchanged.",
       );
     const next = await invoke<Preview>("preview_backup", {
       data: await file.text(),
@@ -127,10 +127,10 @@ export function DataSettings({
           you enable it again; authentication must be set up separately.
         </p>
         <label>
-          Choose CalPal backup
+          Choose Vitera backup
           <input
             type="file"
-            accept=".calpal,application/json"
+            accept=".vitera,.calpal,application/json"
             disabled={busy}
             onChange={(event) => {
               const file = event.target.files?.[0];
@@ -210,7 +210,7 @@ export function DataSettings({
         )}
       </section>
       {busy && (
-        <p role="status">Working… Keep CalPal open until this finishes.</p>
+        <p role="status">Working… Keep Vitera open until this finishes.</p>
       )}
       {notice && (
         <p className="file-path" role="status">

@@ -1,10 +1,10 @@
 [package]
-name = "calpal"
-version = "0.2.0"
+name = "vitera"
+version = "0.2.1"
 description = "Personal offline calorie diary"
 authors = ["Alexander Yoon"]
 edition = "2021"
-default-run = "calpal"
+default-run = "vitera"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

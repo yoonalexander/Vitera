@@ -37,8 +37,8 @@ pub fn save(parent: isize, filename: &str, extension: &str) -> Result<Option<Pat
             let name = HSTRING::from(filename);
             let ext = HSTRING::from(extension);
             let pattern = HSTRING::from(format!("*.{extension}"));
-            let label = HSTRING::from("CalPal export");
-            dialog.SetTitle(&HSTRING::from("Save CalPal export"))?;
+            let label = HSTRING::from("Vitera export");
+            dialog.SetTitle(&HSTRING::from("Save Vitera export"))?;
             dialog.SetFileName(&name)?;
             dialog.SetDefaultExtension(&ext)?;
             dialog.SetFileTypes(&[COMDLG_FILTERSPEC {

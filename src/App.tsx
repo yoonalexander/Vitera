@@ -257,11 +257,11 @@ export function App() {
         <a
           className="brand"
           href="#main"
-          aria-label="CalPal home"
+          aria-label="Vitera home"
           onClick={() => setPage("Today")}
         >
-          <img src="/calpal.svg" alt="" />
-          CalPal
+          <img src="/vitera.svg" alt="" />
+          Vitera
         </a>
         <nav aria-label="Main navigation">
           {(["Today", "Recipes", "Progress"] as const).map((value) => (
@@ -290,7 +290,7 @@ export function App() {
       <main id="main" tabIndex={-1}>
         {!native && (
           <div className="error" role="alert">
-            Open CalPal from the installed Windows app to use the diary. Browser
+            Open Vitera from the installed Windows app to use the diary. Browser
             previews do not store personal records.
           </div>
         )}

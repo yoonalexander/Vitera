@@ -1,3 +1,4 @@
+import { environment } from "./environment.mjs";
 import { chromium, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { spawn, spawnSync } from "node:child_process";
@@ -25,13 +26,13 @@ import {
 // Tests the actual installed WebView2 application and native SQLite commands.
 // All diary records, browser profiles, and screenshots stay in an isolated directory.
 const executable = resolve(
-  process.env.CALPAL_EXE ?? "src-tauri/target/debug/calpal.exe",
+  environment("EXE") ?? "src-tauri/target/debug/vitera.exe",
 );
 if (!existsSync(executable))
-  throw new Error(`Build or install CalPal first: ${executable}`);
+  throw new Error(`Build or install Vitera first: ${executable}`);
 mkdirSync("artifacts", { recursive: true });
-const directory = process.env.CALPAL_SMOKE_DIR
-  ? resolve(process.env.CALPAL_SMOKE_DIR)
+const directory = environment("SMOKE_DIR")
+  ? resolve(environment("SMOKE_DIR"))
   : mkdtempSync(resolve("artifacts/smoke-"));
 mkdirSync(directory, { recursive: true });
 const dataDirectory = join(directory, "data");
@@ -49,10 +50,10 @@ async function launch() {
     windowsHide: true,
     env: {
       ...process.env,
-      CALPAL_DATA_DIR: dataDirectory,
+      VITERA_DATA_DIR: dataDirectory,
       ...(process.argv.includes("--data-export") ||
       process.argv.includes("--data-import")
-        ? { CALPAL_EXPORT_DIR: directory }
+        ? { VITERA_EXPORT_DIR: directory }
         : {}),
       WEBVIEW2_USER_DATA_FOLDER: join(directory, "webview"),
       WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port}`,
@@ -77,6 +78,14 @@ async function launch() {
   let page = context.pages()[0];
   if (!page) page = await context.waitForEvent("page", { timeout: 15000 });
   page.on("pageerror", (failure) => errors.push(failure.message));
+  await expect(page).toHaveTitle("Vitera");
+  await expect(page.getByRole("link", { name: "Vitera home" })).toHaveText(
+    "Vitera",
+  );
+  await expect(page.locator(".brand img")).toHaveJSProperty(
+    "naturalWidth",
+    128,
+  );
   await expect(
     page.getByRole("heading", { name: "Today", exact: true }),
   ).toBeVisible();
@@ -163,12 +172,12 @@ try {
   if (process.argv.includes("--nutrition") && !populated)
     results.push(await nutritionSmoke(page, directory, accessibility));
   if (process.argv.includes("--data-import")) {
-    if (!process.env.CALPAL_IMPORT_BACKUP)
-      throw new Error("Set CALPAL_IMPORT_BACKUP for the restore test.");
+    if (!environment("IMPORT_BACKUP"))
+      throw new Error("Set VITERA_IMPORT_BACKUP for the restore test.");
     await dataImportSmoke(
       page,
       directory,
-      process.env.CALPAL_IMPORT_BACKUP,
+      environment("IMPORT_BACKUP"),
       accessibility,
     );
     results.push(

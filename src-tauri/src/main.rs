@@ -20,6 +20,12 @@ struct Storage(Mutex<Result<Database, String>>);
 #[derive(Default)]
 struct RestorePreview(Mutex<Option<(String, backup::Backup)>>);
 
+// Product rename: new automation names take precedence; existing scripts still work.
+fn environment(name: &str) -> Option<std::ffi::OsString> {
+    std::env::var_os(format!("VITERA_{name}"))
+        .or_else(|| std::env::var_os(format!("CALPAL_{name}")))
+}
+
 #[tauri::command]
 async fn export_data(
     kind: String,
@@ -27,44 +33,40 @@ async fn export_data(
     app: tauri::AppHandle,
 ) -> Result<Option<String>, String> {
     let extension = if kind == "backup" {
-        "calpal"
+        "vitera"
     } else if ["diary", "metrics"].contains(&kind.as_str()) {
         "csv"
     } else {
-        return Err("Choose a CalPal export.".into());
+        return Err("Choose a Vitera export.".into());
     };
     let filename = format!(
-        "CalPal-{kind}-{}.{}",
+        "Vitera-{kind}-{}.{}",
         chrono::Local::now().format("%Y-%m-%d"),
         extension
     );
     // Explicit process-local automation override only works with isolated app data.
     // Web content cannot supply a destination path or turn this mode on.
-    let path = if std::env::var_os("CALPAL_DATA_DIR").is_some()
-        && std::env::var_os("CALPAL_EXPORT_DIR").is_some()
-    {
-        Some(
-            std::path::PathBuf::from(std::env::var_os("CALPAL_EXPORT_DIR").unwrap())
-                .join(&filename),
-        )
-    } else {
-        let window = app
-            .get_webview_window("main")
-            .ok_or("The main window is unavailable.")?;
-        let extension = extension.to_string();
-        #[cfg(windows)]
-        let parent = window
-            .hwnd()
-            .map_err(|_| "The main window is unavailable.")?
-            .0 as isize;
-        #[cfg(not(windows))]
-        let parent = 0;
-        tauri::async_runtime::spawn_blocking(move || {
-            file_dialog::save(parent, &filename, &extension)
-        })
-        .await
-        .map_err(|_| "The save dialog could not open. Try again.")??
-    };
+    let path =
+        if let (Some(_), Some(directory)) = (environment("DATA_DIR"), environment("EXPORT_DIR")) {
+            Some(std::path::PathBuf::from(directory).join(&filename))
+        } else {
+            let window = app
+                .get_webview_window("main")
+                .ok_or("The main window is unavailable.")?;
+            let extension = extension.to_string();
+            #[cfg(windows)]
+            let parent = window
+                .hwnd()
+                .map_err(|_| "The main window is unavailable.")?
+                .0 as isize;
+            #[cfg(not(windows))]
+            let parent = 0;
+            tauri::async_runtime::spawn_blocking(move || {
+                file_dialog::save(parent, &filename, &extension)
+            })
+            .await
+            .map_err(|_| "The save dialog could not open. Try again.")??
+        };
     let Some(mut path) = path else {
         return Ok(None);
     };
@@ -164,7 +166,7 @@ fn with_db<T>(
     let mut database = state
         .0
         .lock()
-        .map_err(|_| "Local storage is unavailable. Restart CalPal and try again.".to_string())?;
+        .map_err(|_| "Local storage is unavailable. Restart Vitera and try again.".to_string())?;
     action(database.as_mut().map_err(|error| error.clone())?)
 }
 
@@ -453,12 +455,13 @@ fn main() {
         .setup(|app| {
             // Optional process-local override keeps automated test records separate.
             let database = (|| {
-                let directory = match std::env::var_os("CALPAL_DATA_DIR") {
+                let directory = match environment("DATA_DIR") {
                     Some(path) => std::path::PathBuf::from(path),
                     None => app.path().app_data_dir().map_err(|error| error.to_string())?,
                 };
                 std::fs::create_dir_all(&directory)
-                    .map_err(|error| format!("CalPal could not open its data folder: {error}. Restart the app after resolving the folder problem."))?;
+                    .map_err(|error| format!("Vitera could not open its data folder: {error}. Restart the app after resolving the folder problem."))?;
+                // Stable storage identity opens existing diaries without copying or resetting.
                 Database::open(&directory.join("calpal.sqlite3"))
             })();
             app.manage(Storage(Mutex::new(database)));
@@ -484,5 +487,5 @@ fn main() {
             describe_meal,cancel_description,save_ai_draft,prepare_photo,release_photo,describe_photo,get_photo_attachment,remove_photo_attachment
         ])
         .run(tauri::generate_context!())
-        .expect("CalPal could not start. Existing records have been left intact.");
+        .expect("Vitera could not start. Existing records have been left intact.");
 }

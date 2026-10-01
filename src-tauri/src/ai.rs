@@ -595,7 +595,7 @@ pub async fn readiness(config: &AiConfig, secret: Option<&str>) -> Result<Readin
             });
         }
         if !models.contains(&config.model) {
-            return Err("The selected model is not installed locally. Choose an installed model; CalPal does not download models.".into());
+            return Err("The selected model is not installed locally. Choose an installed model; Vitera does not download models.".into());
         }
         let show = fetch(
             config,

@@ -1,3 +1,4 @@
+import { environment } from "./environment.mjs";
 import { expect } from "@playwright/test";
 import { createServer } from "node:http";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -355,14 +356,14 @@ export async function verifyPhotoPersistence(page, expectRetained = true) {
 
 export async function livePhotoEvaluation(page, directory, accessibility) {
   const sourceDirectory = resolve(
-    process.env.CALPAL_PHOTO_BENCHMARK ?? "artifacts/photo-benchmark",
+    environment("PHOTO_BENCHMARK") ?? "artifacts/photo-benchmark",
   );
   const references = JSON.parse(
     readFileSync(join(sourceDirectory, "references.json")),
   );
   expect(references.length).toBeGreaterThanOrEqual(3);
-  const visionModel = process.env.CALPAL_VISION_MODEL ?? "gemma3:4b";
-  const model = process.env.CALPAL_DRAFT_MODEL ?? "gemma4:e4b-it-q8_0";
+  const visionModel = environment("VISION_MODEL") ?? "gemma3:4b";
+  const model = environment("DRAFT_MODEL") ?? "gemma4:e4b-it-q8_0";
   await invoke(page, "save_ai_config", {
     config: {
       enabled: true,
@@ -507,9 +508,7 @@ export async function verifyLivePhotoPersistence(page) {
   const refs = JSON.parse(
     readFileSync(
       join(
-        resolve(
-          process.env.CALPAL_PHOTO_BENCHMARK ?? "artifacts/photo-benchmark",
-        ),
+        resolve(environment("PHOTO_BENCHMARK") ?? "artifacts/photo-benchmark"),
         "references.json",
       ),
     ),
