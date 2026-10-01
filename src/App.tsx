@@ -85,6 +85,7 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [composer, setComposer] = useState<Composer | null>(null);
   const [description, setDescription] = useState<{
+    photo: boolean;
     date: string;
     meal: Meal;
   } | null>(null);
@@ -814,8 +815,8 @@ export function App() {
           composer={composer}
           library={library}
           onSave={save}
-          onDescribe={() => {
-            setDescription({ date: composer.date, meal: composer.meal });
+          onDescribe={(photo) => {
+            setDescription({ date: composer.date, meal: composer.meal, photo });
             setComposer(null);
             setError(null);
           }}
@@ -829,6 +830,7 @@ export function App() {
       )}
       {description && (
         <DescriptionForm
+          photoMode={description.photo}
           date={description.date}
           meal={description.meal}
           foods={library.foods}
@@ -838,9 +840,9 @@ export function App() {
             setDescription(null);
             setError(null);
           }}
-          onSave={(entries) =>
+          onSave={(entries, photoId, retainPhoto) =>
             void mutate(async () => {
-              await ai.save(entries);
+              await ai.save(entries, photoId, retainPhoto);
               setDescription(null);
               setNotice(`Saved ${entries.length} reviewed items.`);
               await refresh();

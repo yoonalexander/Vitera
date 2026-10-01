@@ -2,7 +2,7 @@
 
 ## Scope and state
 
-Milestones 1–4 implement the Windows offline diary, nutrition, calorie targets, metrics, recipes and optional local AI descriptions. The runtime, food catalog and lockfiles are included; generated installers, test records, model outputs and screenshots remain local and ignored. No paid services or shared AI credentials are configured.
+Milestones 1–5 implement the Windows offline diary, nutrition, calorie targets, metrics, recipes and optional local AI descriptions/photos. The runtime, food catalog and lockfiles are included; generated installers, test records, model outputs and screenshots remain local and ignored. No paid services or shared AI credentials are configured.
 
 The owner confirmed Windows desktop. The stack is Tauri 2, React, TypeScript, Vite, and SQLite bundled through rusqlite. Exact resolved dependencies are in `package-lock.json` and `src-tauri/Cargo.lock`.
 
@@ -35,7 +35,8 @@ src/
   MetricsUI.tsx   # measurements, water, accessible trends and history
   RecipesUI.tsx   # recipe versions/portions and reusable meals
   AIUI.tsx        # local AI setup, cancellation and editable item review
-  ai.ts           # typed text-provider interface and review validation
+  PhotoUI.tsx     # retained local photo viewing/removal
+  ai.ts           # typed text/photo interface and review validation
   Modal.tsx       # shared keyboard-accessible native dialog
   storage.ts      # typed native command interface and date/display helpers
   styles.css      # responsive light/dark interface
@@ -88,7 +89,18 @@ For the complete Milestone 1–3 workflow, run `npm.cmd run test:installed -- --
 
 Add `--ai` to include the installed Milestone 4 fixture workflow. It serves synthetic Ollama replies on an ephemeral loopback port and calls the actual native adapter, review UI and SQLite storage; it does not substitute browser calculation/storage mocks. Add `--ai-live` to separately evaluate a running real local Ollama model and its visible review/save flow. `CALPAL_OLLAMA_MODEL` selects the installed model (default `gemma3:4b`); the live run never pulls a model. Example: `npm.cmd run test:installed -- --nutrition --metrics-recipes --ai --ai-live`. The live evaluation writes raw synthetic-meal results into ignored artifacts; valid drafts and measured errors are reported separately.
 
-Reinstallation checks use `-- --verify-existing --nutrition --metrics-recipes --ai`. For a deliberate additional real-model comparison on that isolated directory, also add `--ai-live --evaluate-live`; only its specifically named synthetic live-review entries are replaced. See [AI setup](AI.md) and [Milestone 4 verification](VERIFICATION-M4.md). The native schema is now version 4, with separate AI configuration and duplicate-save receipts.
+Reinstallation checks use `-- --verify-existing --nutrition --metrics-recipes --ai`. For a deliberate additional real-model text comparison on that isolated directory, also add `--ai-live --evaluate-live`; only its specifically named synthetic live-review entries are replaced. See [AI setup](AI.md) and [Milestone 4 verification](VERIFICATION-M4.md).
+
+Add `--photos` for the native photo fixture workflow: upload/drop, metadata-free preparation, completion-only capability rejection, model/HTTP failures, cancellation, review, optional retention, restart and removal. For separately measured real local vision inference, explicitly download the three public, attributed [Nutrition5k](https://github.com/google-research-datasets/Nutrition5k) fixtures and run:
+
+```powershell
+node scripts/fetch-photo-benchmark.mjs
+npm.cmd run test:installed -- --nutrition --metrics-recipes --ai --photos --photos-live
+```
+
+The downloader is a developer script, never invoked by the application. It saves dataset photos and reference portions/calories under ignored `artifacts/photo-benchmark`. The live test defaults to the already installed `gemma3:4b` for vision and `gemma4:e4b-it-q8_0` for structured drafts; `CALPAL_VISION_MODEL` and `CALPAL_DRAFT_MODEL` select other installed models. It records uncorrected drafts and actual errors separately from manually corrected diary saves. It never downloads an AI model. Reinstall checks on a successful full smoke directory use `-- --verify-existing --nutrition --metrics-recipes --ai --photos --photos-live`; this validates stored values and retained images without repeating inference. Additional live photo runs should use a fresh smoke directory to avoid adding repeated evaluation entries.
+
+The native schema is version 5, adding photo retention receipts and JPEG attachments to the version-4 AI configuration/save receipts. Originals and prepared temporary images are never written to a file; retained attachments are transactional SQLite blobs. See [Milestone 5 verification](VERIFICATION-M5.md) for source references, inference limitations and installer evidence.
 
 The harness launches the actual executable, attaches Playwright to its WebView2 instance, simulates offline operation, and uses the real native SQLite commands. It creates isolated synthetic records, a separate WebView2 profile, screenshots, and results under ignored `artifacts/smoke-*`. It verifies add/edit/delete/undo, date separation, keyboard form submission, dialog focus, navigation, appearance persistence, accessibility in both themes, narrow/200% text layout, and restart persistence. Its temporary remote-debugging port is enabled only in the test child process; normal app launch does not enable it.
 

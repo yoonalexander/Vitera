@@ -113,7 +113,7 @@ export async function aiSmoke(page, directory, accessibility) {
       .fill("synthetic-local");
     await page.getByLabel("Request timeout (seconds)").fill("5");
     await exact(page, "Check models and readiness").click();
-    await expect(page.getByText(/Local text model is ready/)).toBeVisible();
+    await expect(page.getByText(/Local model is ready/)).toBeVisible();
     await accessibility(page, "ai-settings");
     await exact(page, "Save AI settings").click();
     await expect(

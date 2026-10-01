@@ -270,7 +270,7 @@ Use SQLite migrations, constrained queries, and transactions. Limit Tauri capabi
 | SavedMeal | Named collection of food/recipe portions |
 | MetricEntry | Type, value, canonical unit, measurement timestamp, local date, note |
 | EstimateDraft | Request ID, provider/model, version metadata, items, assumptions, review state |
-| Attachment | Local image path, retention choice, entry/draft relationship |
+| Attachment | Sanitized JPEG in SQLite, retention choice, entry/draft relationship |
 
 Use stable IDs. Logged nutrition and targets are snapshots; imported-source changes must not rewrite history. Keep pending drafts separate from diary totals. Store secret references only, never secret values in SQLite.
 
@@ -278,7 +278,7 @@ Use stable IDs. Logged nutrition and targets are snapshots; imported-source chan
 
 The default app stores records on the device and makes no AI request until AI is configured and invoked. No analytics or telemetry by default. Cloud mode sends the selected meal content and minimum context; body history is not needed for identifying a meal. Show which provider will receive content when cloud mode is enabled.
 
-Temporary image copies are removed after processing. Original photos are not retained by default; users may opt to attach them locally. Cloud-provider retention policies are separate and must be explained during setup. Local storage is not automatically encrypted; an encrypted backup/database is a separate feature choice rather than an unsupported privacy claim.
+Prepared photos stay in process memory while a draft is open and are cleared when replaced, removed, closed or saved. Original files are never copied to CalPal storage. Users may opt to retain a sanitized, resized JPEG in SQLite. Cloud-provider retention policies are separate and must be explained if hosted inference is implemented. Local storage is not automatically encrypted; an encrypted backup/database is a separate feature choice rather than an unsupported privacy claim.
 
 Use OS credential storage for provider keys. Exclude keys from logs, Git, screenshots used for diagnostics, and exports. Do not bundle a developer's shared secret. Restrict provider endpoints to configured destinations; loopback is allowed for local AI, and remote traffic should use HTTPS.
 
@@ -302,4 +302,4 @@ Check offline logging, persistence after restart, keyboard access, text scaling,
 4. Preferred units, meal groups, metrics, and initial food-catalog coverage.
 5. Exact visual palette and whether to retain optional meal photos.
 
-The owner authorized milestones 1–4 and confirmed Windows desktop. Remaining decisions use the defaults in this proposal and stay editable. Later milestones require separate requests; this implementation stops at AI descriptions. Catalog coverage is deliberately six USDA staples plus user-defined foods. Goal changes apply today or later to preserve past days; adult estimates require explicit preview and application. Metric defaults use kg/cm/ml, with alternative units available. Recipe ingredients and logged portions retain versioned snapshots; weighed portions require measured finished yield. Saved meals copy independent diary entries atomically. AI defaults to off, supports native loopback Ollama only, and requires per-item review. Optional local-proxy tokens use Windows Credential Manager. See [local AI behavior](AI.md) and [Milestone 4 verification](VERIFICATION-M4.md) for delivered behavior and model limits.
+The owner authorized milestones 1–5 and confirmed Windows desktop. Remaining decisions use the defaults in this proposal and stay editable. This implementation stops at AI photos; Milestone 6 requires a separate request. Catalog coverage is deliberately six USDA staples plus user-defined foods. Goal changes apply today or later to preserve past days; adult estimates require explicit preview and application. Metric defaults use kg/cm/ml, with alternative units available. Recipe ingredients and logged portions retain versioned snapshots; weighed portions require measured finished yield. Saved meals copy independent diary entries atomically. AI defaults to off, supports native loopback Ollama only, and requires per-item review. Photos use a declared vision model, preserve uncertainty, and retain a local attachment only by explicit choice. Optional local-proxy tokens use Windows Credential Manager. See [local AI behavior](AI.md) and [Milestone 5 verification](VERIFICATION-M5.md) for delivered behavior and model limits.

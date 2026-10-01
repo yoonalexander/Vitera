@@ -10,6 +10,7 @@ import {
   type Readiness,
   type ReviewRow,
   type TextDraft,
+  type PreparedPhoto,
 } from "./ai";
 import {
   blankNutrition,
@@ -69,8 +70,8 @@ export function AISettings({ onClose }: { onClose: () => void }) {
   return (
     <Modal title="Local AI settings" onClose={onClose} busy={busy}>
       <p className="form-intro">
-        Optional Ollama on this device. Your meal description is sent only to
-        127.0.0.1. Manual logging works with AI off.
+        Optional Ollama on this device. Meal descriptions and prepared photos
+        are sent only to 127.0.0.1. Manual logging works with AI off.
       </p>
       {config && (
         <form
@@ -92,7 +93,9 @@ export function AISettings({ onClose }: { onClose: () => void }) {
                 }
               >
                 <option value="false">Off</option>
-                <option value="true">Enabled for descriptions</option>
+                <option value="true">
+                  Enabled for descriptions and photos
+                </option>
               </select>
             </label>
             <div className="form-row">
@@ -146,6 +149,24 @@ export function AISettings({ onClose }: { onClose: () => void }) {
                 <option key={m} value={m} />
               ))}
             </datalist>
+            <label>
+              Vision model (optional)
+              <input
+                value={config.visionModel ?? ""}
+                maxLength={120}
+                list="installed-models"
+                placeholder="Use the local model above"
+                onChange={(e) => {
+                  setConfig({ ...config, visionModel: e.target.value || null });
+                  setReadiness(null);
+                }}
+              />
+            </label>
+            <p className="source-note">
+              Photos may use a separate installed vision model. The Local model
+              above builds the structured review. Both run on this device; leave
+              this empty to use one model for both steps.
+            </p>
             <button
               type="button"
               onClick={() =>
@@ -469,6 +490,7 @@ function ItemReview({
 }
 
 export function DescriptionForm({
+  photoMode = false,
   date: initialDate,
   meal: initialMeal,
   foods,
@@ -477,14 +499,24 @@ export function DescriptionForm({
   onClose,
   onSave,
 }: {
+  photoMode?: boolean;
   date: string;
   meal: Meal;
   foods: Food[];
   busy: boolean;
   error: string | null;
   onClose: () => void;
-  onSave: (entries: EntryInput[]) => void;
+  onSave: (
+    entries: EntryInput[],
+    photoId?: string,
+    retainPhoto?: boolean,
+  ) => void;
 }) {
+  const [photo, setPhoto] = useState<PreparedPhoto | null>(null);
+  const [preparing, setPreparing] = useState(false);
+  const [retainPhoto, setRetainPhoto] = useState(false);
+  const photoRef = useRef<PreparedPhoto | null>(null);
+  const photoGeneration = useRef(0);
   const [text, setText] = useState("");
   const [date, setDate] = useState(initialDate);
   const [meal, setMeal] = useState(initialMeal);
@@ -502,6 +534,17 @@ export function DescriptionForm({
   const active = useRef<string | null>(null);
   const starting = useRef(false);
   useEffect(() => {
+    const preventFileNavigation = (e: DragEvent) => {
+      if (e.dataTransfer?.types.includes("Files")) e.preventDefault();
+    };
+    window.addEventListener("dragover", preventFileNavigation);
+    window.addEventListener("drop", preventFileNavigation);
+    return () => {
+      window.removeEventListener("dragover", preventFileNavigation);
+      window.removeEventListener("drop", preventFileNavigation);
+    };
+  }, []);
+  useEffect(() => {
     let closed = false;
     ai.config()
       .then((c) => {
@@ -513,6 +556,9 @@ export function DescriptionForm({
     return () => {
       closed = true;
       generation.current++;
+      photoGeneration.current++;
+      if (photoRef.current)
+        void ai.releasePhoto(photoRef.current.id).catch(() => {});
       if (active.current) void ai.cancel(active.current).catch(() => {});
     };
   }, []);
@@ -528,6 +574,65 @@ export function DescriptionForm({
     if (active.current) cancel();
     setNotice("");
   }
+  async function choosePhoto(files: FileList | File[] | null) {
+    if (!files?.length || busy) return;
+    if (files.length !== 1) {
+      setError("Choose one meal photo at a time.");
+      return;
+    }
+    const file = files[0];
+    if (file.size > 20 * 1024 * 1024 || !file.size) {
+      setError("Choose a photo no larger than 20 MiB.");
+      return;
+    }
+    changed();
+    const token = ++photoGeneration.current;
+    setPreparing(true);
+    setError("");
+    try {
+      const data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(",")[1]);
+        reader.onerror = () =>
+          reject(new Error("The photo could not be read."));
+        reader.readAsDataURL(file);
+      });
+      if (token !== photoGeneration.current) return;
+      const prepared = await ai.preparePhoto(data);
+      if (token !== photoGeneration.current) {
+        await ai.releasePhoto(prepared.id);
+        return;
+      }
+      const previous = photoRef.current;
+      photoRef.current = prepared;
+      if (previous) void ai.releasePhoto(previous.id).catch(() => {});
+      setPhoto(prepared);
+      setDraft(null);
+      setRows([]);
+      setPreviews({});
+      setRetainPhoto(false);
+      setNotice(
+        "Photo prepared. Metadata removed; original file stays on your device.",
+      );
+    } catch (e) {
+      if (token === photoGeneration.current) setError(String(e));
+    } finally {
+      if (token === photoGeneration.current) setPreparing(false);
+    }
+  }
+  function removePhoto() {
+    changed();
+    photoGeneration.current++;
+    if (photoRef.current)
+      void ai.releasePhoto(photoRef.current.id).catch(() => {});
+    photoRef.current = null;
+    setPhoto(null);
+    setPreparing(false);
+    setDraft(null);
+    setRows([]);
+    setPreviews({});
+    setRetainPhoto(false);
+  }
   async function describe() {
     if (starting.current) return;
     starting.current = true;
@@ -538,7 +643,10 @@ export function DescriptionForm({
     setError("");
     setNotice("");
     try {
-      const result = await ai.describe(id, text);
+      const result =
+        photoMode && photo
+          ? await ai.photo(id, text, photo.id)
+          : await ai.describe(id, text);
       if (token === generation.current) {
         setDraft(result);
         setRows(reviewRows(result));
@@ -569,7 +677,7 @@ export function DescriptionForm({
     .filter((value): value is number => value !== null);
   function save(e: FormEvent) {
     e.preventDefault();
-    if (!draft || !allReady || running || busy) return;
+    if (!draft || !allReady || running || preparing || busy) return;
     onSave(
       rows.map((row) => ({
         id: row.id,
@@ -599,15 +707,19 @@ export function DescriptionForm({
             assumptions: row.original.assumptions,
             questions: row.original.questions,
             reviewed: true,
+            photo: draft.photo ?? null,
+            visionModel: draft.visionModel ?? null,
           },
         },
       })),
+      draft.photo?.id,
+      !!draft.photo && retainPhoto,
     );
   }
   return (
     <>
       <Modal
-        title="Describe a meal"
+        title={photoMode ? "Photo meal draft" : "Describe a meal"}
         active={!settingsOpen}
         busy={busy}
         onClose={() => {
@@ -619,8 +731,57 @@ export function DescriptionForm({
           A local model proposes items. Review the identities, amounts and
           assumptions; nothing enters your diary until you save.
         </p>
+        {photoMode && (
+          <>
+            <div
+              className="photo-drop"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (!busy) void choosePhoto(e.dataTransfer.files);
+              }}
+            >
+              <label>
+                Meal photo
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  disabled={busy || preparing}
+                  onChange={(e) => {
+                    void choosePhoto(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              <p className="muted">
+                Choose or drop one JPEG, PNG or WebP, up to 20 MiB / 24
+                megapixels. HEIC needs conversion.
+              </p>
+            </div>
+            {preparing && <p role="status">Preparing photo…</p>}
+            {photo && (
+              <figure className="photo-preview">
+                <img
+                  src={`data:image/jpeg;base64,${photo.data}`}
+                  alt="Prepared meal photo for review"
+                />
+                <figcaption>
+                  {photo.width} × {photo.height} · metadata removed
+                </figcaption>
+                <button type="button" disabled={busy} onClick={removePhoto}>
+                  Remove photo
+                </button>
+              </figure>
+            )}
+            <p className="source-note">
+              Photo portions are estimates. Check hidden oils, ingredients and
+              preparation. A vision model is required; no paid fallback is
+              enabled.
+            </p>
+          </>
+        )}
         <label>
-          Meal description
+          {photoMode ? "Optional photo context" : "Meal description"}
           <textarea
             data-autofocus=""
             rows={3}
@@ -639,6 +800,12 @@ export function DescriptionForm({
             ? `Ollama · ${config.model} · this device only · ${config.timeoutSeconds}s timeout`
             : "Local AI is off. Enable a downloaded model in AI settings. Manual food entry remains available."}
         </p>
+        {photoMode && config?.enabled && (
+          <p className="source-note">
+            Photo observations: {config.visionModel ?? config.model}. Structured
+            draft: {config.model}.
+          </p>
+        )}
         <div className="form-actions">
           <button
             type="button"
@@ -655,7 +822,12 @@ export function DescriptionForm({
             <button
               type="button"
               className="primary"
-              disabled={busy || !config?.enabled || !text.trim()}
+              disabled={
+                busy ||
+                preparing ||
+                !config?.enabled ||
+                (photoMode ? !photo : !text.trim())
+              }
               onClick={() => void describe()}
             >
               {draft ? "Generate new draft" : "Create draft"}
@@ -673,6 +845,16 @@ export function DescriptionForm({
           </p>
         )}
         {notice && <p role="status">{notice}</p>}
+        {draft?.photoObservation && (
+          <details>
+            <summary>What the vision model saw</summary>
+            <p>{draft.photoObservation}</p>
+            <p className="source-note">
+              Unverified model observations. Check them against your meal before
+              confirming the items.
+            </p>
+          </details>
+        )}
         <form onSubmit={save}>
           <fieldset disabled={busy}>
             {rows.length > 0 && (
@@ -766,6 +948,23 @@ export function DescriptionForm({
                 />
               </label>
             </div>
+            {draft?.photo && (
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={retainPhoto}
+                  onChange={(e) => setRetainPhoto(e.target.checked)}
+                />
+                Keep the prepared photo locally with these diary items.
+              </label>
+            )}
+            {draft?.photo && (
+              <p className="source-note">
+                Retention is off by default. Closing this draft clears its
+                temporary photo from CalPal memory. A retained photo is shared
+                by these items and can be removed from Edit food.
+              </p>
+            )}
             {draft && (
               <p className="source-note">
                 Draft: {draft.model} · {draft.promptVersion} · schema{" "}
@@ -790,7 +989,10 @@ export function DescriptionForm({
             >
               Cancel
             </button>
-            <button className="primary" disabled={busy || running || !allReady}>
+            <button
+              className="primary"
+              disabled={busy || running || preparing || !allReady}
+            >
               {busy ? "Saving…" : "Save reviewed items"}
             </button>
           </div>

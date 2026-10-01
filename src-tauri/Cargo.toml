@@ -19,6 +19,8 @@ uuid = { version = "1", features = ["v4"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 tokio = { version = "1", features = ["sync", "time", "macros"] }
 keyring = { version = "3.6", features = ["windows-native"] }
+image = { version = "0.25.10", default-features = false, features = ["jpeg", "png", "webp"] }
+base64 = "0.22"
 
 [dev-dependencies]
 tempfile = "3"

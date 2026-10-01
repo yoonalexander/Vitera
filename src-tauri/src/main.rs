@@ -4,6 +4,7 @@ mod ai;
 mod db;
 mod metrics;
 mod nutrition;
+mod photo;
 mod recipes;
 
 use db::{Database, Day, Entry, EntryInput, Library, Settings, Week};
@@ -197,7 +198,27 @@ async fn check_ai(
 ) -> Result<ai::Readiness, String> {
     let reference = with_db(state, |db| db.ai_config().map(|v| v.1))?;
     let secret = ai::read_secret(&reference)?;
-    ai::readiness(&config, secret.as_deref()).await
+    let mut ready = ai::readiness(&config, secret.as_deref()).await?;
+    if let Some(model) = &config.vision_model {
+        if model != &config.model {
+            let mut vision = config.clone();
+            vision.model = model.clone();
+            vision.vision_model = None;
+            let photo = ai::readiness(&vision, secret.as_deref()).await?;
+            ready.vision = photo.vision;
+            ready.message = format!(
+                "{} Photo model: {} ({}).",
+                ready.message,
+                model,
+                if photo.vision {
+                    "vision supported"
+                } else {
+                    "text-only; photos unavailable"
+                }
+            );
+        }
+    }
+    Ok(ready)
 }
 #[tauri::command]
 async fn describe_meal(
@@ -222,9 +243,68 @@ fn cancel_description(
 #[tauri::command]
 fn save_ai_draft(
     entries: Vec<EntryInput>,
+    photo_id: Option<String>,
+    retain_photo: Option<bool>,
+    photos: tauri::State<'_, photo::Photos>,
     state: tauri::State<'_, Storage>,
 ) -> Result<Vec<Entry>, String> {
-    with_db(state, |db| db.save_ai_entries(entries))
+    if let Some(id) = photo_id {
+        let photo = photos.get(&id)?;
+        with_db(state, |db| {
+            db.save_photo_entries(entries, &photo, retain_photo.unwrap_or(false))
+        })
+    } else {
+        if retain_photo.unwrap_or(false)
+            || entries
+                .iter()
+                .any(|e| e.nutrition.ai.as_ref().is_some_and(|a| a.photo.is_some()))
+        {
+            return Err("Choose the photo belonging to this draft before saving.".into());
+        }
+        with_db(state, |db| db.save_ai_entries(entries))
+    }
+}
+
+#[tauri::command]
+async fn prepare_photo(
+    data: String,
+    photos: tauri::State<'_, photo::Photos>,
+) -> Result<photo::PreparedPhoto, String> {
+    photos.prepare(&data)
+}
+#[tauri::command]
+fn release_photo(id: String, photos: tauri::State<'_, photo::Photos>) -> Result<(), String> {
+    photos.release(&id)
+}
+#[tauri::command]
+async fn describe_photo(
+    input: ai::TextInput,
+    photo_id: String,
+    state: tauri::State<'_, Storage>,
+    jobs: tauri::State<'_, ai::AiJobs>,
+    photos: tauri::State<'_, photo::Photos>,
+) -> Result<ai::TextDraft, String> {
+    let photo = photos.get(&photo_id)?;
+    let (config, reference, foods) = with_db(state, |db| {
+        let (config, reference) = db.ai_config()?;
+        Ok((config, reference, db.library()?.foods))
+    })?;
+    jobs.photo(config, ai::read_secret(&reference)?, input, foods, photo)
+        .await
+}
+#[tauri::command]
+fn get_photo_attachment(
+    request_id: String,
+    state: tauri::State<'_, Storage>,
+) -> Result<Option<photo::PreparedPhoto>, String> {
+    with_db(state, |db| db.attachment(&request_id))
+}
+#[tauri::command]
+fn remove_photo_attachment(
+    request_id: String,
+    state: tauri::State<'_, Storage>,
+) -> Result<(), String> {
+    with_db(state, |db| db.remove_attachment(&request_id))
 }
 
 fn main() {
@@ -242,6 +322,7 @@ fn main() {
             })();
             app.manage(Storage(Mutex::new(database)));
             app.manage(ai::AiJobs::default());
+            app.manage(photo::Photos::default());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -257,7 +338,7 @@ fn main() {
             get_recipe_library,get_recipe_history,save_recipe,preview_recipe,preview_recipe_portion,
             save_meal,log_meal,
             get_ai_config,save_ai_config,ai_credential_present,set_ai_credential,check_ai,
-            describe_meal,cancel_description,save_ai_draft
+            describe_meal,cancel_description,save_ai_draft,prepare_photo,release_photo,describe_photo,get_photo_attachment,remove_photo_attachment
         ])
         .run(tauri::generate_context!())
         .expect("CalPal could not start. Existing records have been left intact.");

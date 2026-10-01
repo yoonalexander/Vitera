@@ -1,3 +1,4 @@
+import { PhotoAttachment } from "./PhotoUI";
 import { useEffect, useState, type FormEvent } from "react";
 import { Modal } from "./Modal";
 import type { Composer } from "./App";
@@ -69,7 +70,7 @@ export function FoodForm({
   composer: Composer;
   library: Library;
   onSave: (input: EntryInput) => void;
-  onDescribe: () => void;
+  onDescribe: (photo: boolean) => void;
 }) {
   const [name, setName] = useState(composer.entry?.name ?? "");
   const [kcal, setKcal] = useState(
@@ -153,10 +154,20 @@ export function FoodForm({
       {!composer.entry && (
         <div className="entry-methods" aria-label="Entry method">
           <span>Search / manual</span>
-          <button type="button" disabled={common.busy} onClick={onDescribe}>
+          <button
+            type="button"
+            disabled={common.busy}
+            onClick={() => onDescribe(false)}
+          >
             Describe
           </button>
-          <span className="muted">Photo · coming later</span>
+          <button
+            type="button"
+            disabled={common.busy}
+            onClick={() => onDescribe(true)}
+          >
+            Photo
+          </button>
         </div>
       )}
       {composer.entry?.ai && (
@@ -178,10 +189,19 @@ export function FoodForm({
                 ]?.label ?? "named food portion")
               : composer.entry.ai.unit}
           </p>
+          {composer.entry.ai.visionModel && (
+            <p className="source-note">
+              Photo observations: {composer.entry.ai.visionModel} · structured
+              draft: {composer.entry.ai.model}
+            </p>
+          )}
           {composer.entry.ai.assumptions.map((a, i) => (
             <p key={i}>{a}</p>
           ))}
         </details>
+      )}
+      {composer.entry?.ai?.photo && (
+        <PhotoAttachment requestId={composer.entry.ai.requestId} />
       )}
       {!composer.entry && (
         <details

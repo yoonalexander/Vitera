@@ -13,6 +13,15 @@ export interface AiConfig {
   port: number;
   model: string;
   timeoutSeconds: number;
+  visionModel?: string | null;
+}
+export interface PhotoInfo {
+  id: string;
+  width: number;
+  height: number;
+}
+export interface PreparedPhoto extends PhotoInfo {
+  data: string;
 }
 export interface AiProvenance {
   requestId: string;
@@ -29,6 +38,8 @@ export interface AiProvenance {
   assumptions: string[];
   questions: string[];
   reviewed: boolean;
+  photo?: PhotoInfo | null;
+  visionModel?: string | null;
 }
 export interface Candidate {
   name: string;
@@ -46,6 +57,9 @@ export interface TextDraft {
   promptVersion: string;
   schemaVersion: number;
   generatedAt: string;
+  photo?: PhotoInfo | null;
+  photoObservation?: string | null;
+  visionModel?: string | null;
   items: {
     candidate: Candidate;
     food: Food | null;
@@ -78,10 +92,31 @@ export const ai = {
         portionHints: null,
       },
     }),
+  preparePhoto: (data: string) =>
+    invoke<PreparedPhoto>("prepare_photo", { data }),
+  releasePhoto: (id: string) => invoke<void>("release_photo", { id }),
+  photo: (requestId: string, text: string, photoId: string) =>
+    invoke<TextDraft>("describe_photo", {
+      input: {
+        requestId,
+        text,
+        locale: navigator.language,
+        portionHints: null,
+      },
+      photoId,
+    }),
+  attachment: (requestId: string) =>
+    invoke<PreparedPhoto | null>("get_photo_attachment", { requestId }),
+  removeAttachment: (requestId: string) =>
+    invoke<void>("remove_photo_attachment", { requestId }),
   cancel: (requestId: string) =>
     invoke<void>("cancel_description", { requestId }),
-  save: (entries: EntryInput[]) =>
-    invoke<Entry[]>("save_ai_draft", { entries }),
+  save: (entries: EntryInput[], photoId?: string, retainPhoto = false) =>
+    invoke<Entry[]>("save_ai_draft", {
+      entries,
+      photoId: photoId ?? null,
+      retainPhoto,
+    }),
 };
 export const units = [
   "g",

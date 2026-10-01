@@ -14,6 +14,13 @@ import {
 } from "./metrics-recipes-smoke.mjs";
 import { aiSmoke, verifyAIPersistence, liveAiEvaluation } from "./ai-smoke.mjs";
 
+import {
+  photoSmoke,
+  verifyPhotoPersistence,
+  livePhotoEvaluation,
+  verifyLivePhotoPersistence,
+} from "./photo-smoke.mjs";
+
 // Tests the actual installed WebView2 application and native SQLite commands.
 // All diary records, browser profiles, and screenshots stay in an isolated directory.
 const executable = resolve(
@@ -187,6 +194,21 @@ try {
   }
   results.push("Today / Recipes / Progress navigation");
 
+  if (process.argv.includes("--photos") && !repeat) {
+    await photoSmoke(page, directory, accessibility);
+    results.push(
+      "Photo upload/drop, review, local-only failures, cleanup and optional retention",
+    );
+  }
+  if (
+    process.argv.includes("--photos-live") &&
+    (!repeat || process.argv.includes("--evaluate-live"))
+  ) {
+    await livePhotoEvaluation(page, directory, accessibility);
+    results.push(
+      "Real Nutrition5k photos benchmarked and corrected through visible diary save",
+    );
+  }
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByRole("combobox", { name: "Appearance" }).selectOption("dark");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
@@ -239,6 +261,18 @@ try {
     await verifyAIPersistence(page);
     results.push(
       "Restart preserves reviewed AI provenance, source snapshots and two-item diary total",
+    );
+  }
+  if (process.argv.includes("--photos")) {
+    await verifyPhotoPersistence(page, !repeat);
+    results.push(
+      "Restart preserves retained JPEG/provenance; explicit removal keeps nutrition",
+    );
+  }
+  if (process.argv.includes("--photos-live")) {
+    await verifyLivePhotoPersistence(page);
+    results.push(
+      "Real photo diary values and optional attachment persist across restart",
     );
   }
   expect(errors).toEqual([]);

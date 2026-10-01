@@ -128,7 +128,7 @@ impl Database {
         let version: i64 = connection
             .query_row("PRAGMA user_version", [], |row| row.get(0))
             .map_err(sql_error)?;
-        if version > 4 {
+        if version > 5 {
             return Err(
                 "This database requires a newer CalPal version. Existing records were left intact."
                     .into(),
@@ -171,6 +171,16 @@ impl Database {
                 .map_err(sql_error)?;
             transaction
                 .pragma_update(None, "user_version", 4)
+                .map_err(sql_error)?;
+            transaction.commit().map_err(sql_error)?;
+        }
+        if version < 5 {
+            let transaction = connection.transaction().map_err(sql_error)?;
+            transaction
+                .execute_batch(include_str!("../migrations/005_photos.sql"))
+                .map_err(sql_error)?;
+            transaction
+                .pragma_update(None, "user_version", 5)
                 .map_err(sql_error)?;
             transaction.commit().map_err(sql_error)?;
         }

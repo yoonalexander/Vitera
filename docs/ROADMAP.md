@@ -1,6 +1,6 @@
 # CalPal roadmap
 
-Status: milestones 0–4 completed. Milestones 5–6 remain proposed and unimplemented.
+Status: milestones 0–5 completed. Milestone 6 remains proposed and unimplemented.
 
 Complete and verify one requested milestone at a time. Record actual results below the milestone when implemented; a proposed acceptance criterion is not a passed test.
 
@@ -69,6 +69,10 @@ Verification: 26 native tests and 6 frontend domain tests, build/type checking, 
 Acceptance: correct a multi-item meal draft and save it once. Verify malformed replies, unavailable models, unknown units, missing portions, and late responses preserve edits. Evaluate actual meal descriptions separately from mocked provider tests. Manual logging still works without AI.
 
 ## Milestone 5 — AI photos
+
+Completed on 2026-10-01. Added single-photo upload and drag-and-drop, optional meal context, bounded native decoding, orientation correction and metadata-free resized JPEG preparation. Photo observations and structured extraction can use separately configured local models; both are checked, displayed and preserved in provenance. The editable review preserves uncertainty, local-source calculations and explicit confirmation. Temporary images stay in process memory; optional retained JPEGs save atomically with entries and can be removed without changing nutrition. No hosted provider or paid fallback is configured.
+
+Verification: 29 native tests and 6 frontend domain tests, build/type checking, formatting and Rust linting passed. Installed checks cover upload/drop, text-only capability rejection before image transfer, malformed/HTTP/model/network failures, timeout/cancellation, edit preservation, review/save once, retention off by default, cleanup, accessibility, narrow text layout, restart and attachment removal. Real weighed Nutrition5k meals were benchmarked separately and corrected through the visible photo-to-diary flow; actual model errors and unresolved portions are recorded. Schema 4 → 5 preserves earlier records and reinstallation preserves photo provenance and retained attachments. See [Milestone 5 verification and model limits](VERIFICATION-M5.md) and [local AI setup](AI.md). Milestone 6 is deferred.
 
 - Add photo upload/drag-and-drop and optional description context.
 - Prepare resized images and strip metadata.
