@@ -6,9 +6,9 @@ CalPal takes inspiration from the food diary in MyFitnessPal and photo logging i
 
 ## Project status
 
-Milestones 0–5 are complete. CalPal has an offline calorie/macro diary, local/custom foods and portions, favorites and recent entries, calorie targets with history, diary completion, weekly summaries, weight/body measurements/body-fat and water records, metric trends, versioned recipes and reusable saved meals. Optional local Ollama descriptions and photos produce editable drafts with assumptions, nutrition-source snapshots and reviewed transactional saving. Photos are resized and stripped of metadata, with local attachment retention off by default. Records persist in local SQLite.
+Milestones 0–6 are complete. CalPal has an offline calorie/macro diary, local/custom foods and portions, favorites and recent entries, calorie targets with history, diary completion, weekly summaries, weight/body measurements/body-fat and water records, metric trends, versioned recipes and reusable saved meals. Optional local Ollama descriptions and photos produce editable drafts with assumptions, nutrition-source snapshots and reviewed transactional saving. Photos are resized and stripped of metadata, with local attachment retention off by default. Records persist in local SQLite. Diary/metric CSV exports, complete backups and validated replacement restores are available from Settings.
 
-The first platform is Windows desktop, confirmed by the owner. Built with Tauri 2, React, TypeScript, and bundled SQLite. Today logs foods and water, Recipes manages versioned recipes and saved meals, and Progress shows diary coverage and measurement history. AI defaults to off; see [local AI setup](docs/AI.md). Hosted AI is not configured. Export/restore and personal-release work remain Milestone 6.
+The first platform is Windows desktop, confirmed by the owner. Built with Tauri 2, React, TypeScript, and bundled SQLite. Today logs foods and water, Recipes manages versioned recipes and saved meals, and Progress shows diary coverage and measurement history. AI defaults to off; see [local AI setup](docs/AI.md). Hosted AI is not configured. Version 0.2.0 is the personal release; see [installation, backup and recovery](docs/RELEASE.md).
 
 ## Run and build
 
@@ -19,11 +19,11 @@ npm.cmd ci
 npm.cmd run tauri -- dev
 ```
 
-Create the development installer with `npm.cmd run tauri -- build --debug`. Output: `src-tauri/target/debug/bundle/nsis/CalPal_0.1.0_x64-setup.exe`. It is unsigned; Windows may show a trust prompt. WebView2 must be present for offline installation, or the installer will need internet to obtain it.
+Create the release installer with `npm.cmd run tauri -- build`. Output: `src-tauri/target/release/bundle/nsis/CalPal_0.2.0_x64-setup.exe`. It is unsigned; Windows may show a trust prompt. WebView2 must be present for offline installation, or the installer will need internet to obtain it.
 
 See [development and verification instructions](docs/REPOSITORY.md) for checks and isolated installed-app testing.
 
-## Planned features
+## Features
 
 - Daily food diary, calorie totals, and optional protein, carbohydrate, and fat tracking.
 - Estimated maintenance calories and an editable daily target.
@@ -44,6 +44,8 @@ See [development and verification instructions](docs/REPOSITORY.md) for checks a
 - [Local AI setup and review](docs/AI.md)
 - [Milestone 4 verification](docs/VERIFICATION-M4.md)
 - [Milestone 5 verification](docs/VERIFICATION-M5.md)
+- [Personal release, backup and recovery](docs/RELEASE.md)
+- [Milestone 6 verification](docs/VERIFICATION-M6.md)
 - [Offline food catalog sources](catalog/README.md)
 
 ## Cost approach

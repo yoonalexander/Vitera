@@ -35,6 +35,8 @@ backups/
 *.sqlite-*
 *.sqlite3
 *.sqlite3-*
+*.calpal
+*.csv
 
 # AI model weights and caches
 models/

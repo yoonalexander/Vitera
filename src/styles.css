@@ -892,3 +892,44 @@ dialog p.muted {
   margin: 0.5rem 0;
   font-size: 0.85rem;
 }
+.data-section {
+  border-top: 1px solid var(--line);
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+}
+.data-section p {
+  line-height: 1.6;
+}
+.data-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.data-section input[type="file"] {
+  max-width: 100%;
+}
+.restore-preview {
+  margin-top: 1rem;
+}
+.file-path {
+  overflow-wrap: anywhere;
+}
+.backup-counts {
+  margin: 1rem 0;
+}
+.backup-counts div {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.backup-counts dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.storage-note button + button {
+  margin-left: 0.75rem;
+  margin-top: 0.75rem;
+}

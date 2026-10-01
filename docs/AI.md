@@ -13,6 +13,16 @@ AI defaults to off. The default request deadline is 90 seconds, adjustable from 
 
 ## Photo drafts and retention
 
+For the tested pairing, explicit optional model downloads use Ollama's [pull command](https://github.com/ollama/ollama/blob/main/docs/quickstart.mdx):
+
+```powershell
+ollama pull gemma4:e4b-it-q8_0
+ollama pull gemma3:4b
+ollama list
+```
+
+The installed development copies occupy approximately 11.64 GB and 3.34 GB respectively; these are model file sizes, not a guarantee of memory requirements or speed. Check the model's current tags/license before downloading: [Gemma 4](https://ollama.com/library/gemma4) and [Gemma 3](https://ollama.com/library/gemma3). No models were downloaded by CalPal or automatically during release verification. The development machine has 32 GiB RAM and an RTX 5060; its evaluated results do not establish performance on other devices. See [release setup, costs and recovery](RELEASE.md).
+
 Open **Add food → Photo**. Choose or drop one JPEG, PNG or WebP, optionally describe the ingredients or measured amounts, and choose **Create draft**. Limits are 20 MiB, 24 megapixels and 12,000 pixels per dimension. Convert HEIC or other unsupported formats first. The same editable item review applies to photos; every row requires confirmation. A photo cannot reliably establish weight, preparation, hidden oils or ingredients. Use measured portions and label/recipe data when available.
 
 Native code decodes the actual file content, applies its orientation, flattens transparency onto white, resizes to at most 1,280 pixels on the longest side without enlarging small images, and writes a fresh quality-85 JPEG. Original EXIF/GPS and other metadata are excluded. Only that prepared image reaches the selected local vision model, using Ollama's [vision API](https://docs.ollama.com/capabilities/vision). A first inference observes visible foods in plain text; the configured Local model then extracts a validated draft from those uncertain observations and your optional context. Both share the configured deadline and cancellation. Both models are shown before generation and recorded in saved provenance. **What the vision model saw** lets you inspect the observations during review. The native capability check rejects a text-only vision selection before sending any photo to chat.

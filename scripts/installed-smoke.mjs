@@ -13,6 +13,7 @@ import {
   verifyMetricsRecipesPersistence,
 } from "./metrics-recipes-smoke.mjs";
 import { aiSmoke, verifyAIPersistence, liveAiEvaluation } from "./ai-smoke.mjs";
+import { dataExportSmoke, dataImportSmoke } from "./data-smoke.mjs";
 
 import {
   photoSmoke,
@@ -49,6 +50,10 @@ async function launch() {
     env: {
       ...process.env,
       CALPAL_DATA_DIR: dataDirectory,
+      ...(process.argv.includes("--data-export") ||
+      process.argv.includes("--data-import")
+        ? { CALPAL_EXPORT_DIR: directory }
+        : {}),
       WEBVIEW2_USER_DATA_FOLDER: join(directory, "webview"),
       WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port}`,
     },
@@ -118,6 +123,7 @@ try {
   const total = () => page.getByTestId("daily-total");
   const existing = await total().textContent();
   const repeat = process.argv.includes("--verify-existing");
+  const populated = repeat || process.argv.includes("--data-import");
   if (!repeat) {
     await expect(total()).toHaveText("0");
     await page
@@ -154,15 +160,28 @@ try {
     expect(existing).toBe("650");
     results.push("Existing diary survives installer reinstallation");
   }
-  if (process.argv.includes("--nutrition") && !repeat)
+  if (process.argv.includes("--nutrition") && !populated)
     results.push(await nutritionSmoke(page, directory, accessibility));
-  if (process.argv.includes("--metrics-recipes") && !repeat)
+  if (process.argv.includes("--data-import")) {
+    if (!process.env.CALPAL_IMPORT_BACKUP)
+      throw new Error("Set CALPAL_IMPORT_BACKUP for the restore test.");
+    await dataImportSmoke(
+      page,
+      directory,
+      process.env.CALPAL_IMPORT_BACKUP,
+      accessibility,
+    );
+    results.push(
+      "Populated backup restored into fresh installation, every data table identical, AI disabled, recovery copy restored successfully",
+    );
+  }
+  if (process.argv.includes("--metrics-recipes") && !populated)
     results.push(await metricsRecipesSmoke(page, directory, accessibility));
-  if (process.argv.includes("--ai") && !repeat)
+  if (process.argv.includes("--ai") && !populated)
     results.push(await aiSmoke(page, directory, accessibility));
   if (
     process.argv.includes("--ai-live") &&
-    (!repeat || process.argv.includes("--evaluate-live"))
+    (!populated || process.argv.includes("--evaluate-live"))
   )
     results.push(await liveAiEvaluation(page, directory, accessibility));
   await page.getByRole("button", { name: "Settings", exact: true }).click();
@@ -194,7 +213,7 @@ try {
   }
   results.push("Today / Recipes / Progress navigation");
 
-  if (process.argv.includes("--photos") && !repeat) {
+  if (process.argv.includes("--photos") && !populated) {
     await photoSmoke(page, directory, accessibility);
     results.push(
       "Photo upload/drop, review, local-only failures, cleanup and optional retention",
@@ -202,7 +221,7 @@ try {
   }
   if (
     process.argv.includes("--photos-live") &&
-    (!repeat || process.argv.includes("--evaluate-live"))
+    (!populated || process.argv.includes("--evaluate-live"))
   ) {
     await livePhotoEvaluation(page, directory, accessibility);
     results.push(
@@ -213,6 +232,12 @@ try {
   await page.getByRole("combobox", { name: "Appearance" }).selectOption("dark");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.getByRole("button", { name: "Done", exact: true }).click();
+  if (process.argv.includes("--data-export")) {
+    await dataExportSmoke(page, directory, accessibility);
+    results.push(
+      "CSV and complete backup exports, validated preview, invalid backups leave all tables intact, cancellation, keyboard, narrow text and accessibility",
+    );
+  }
   await accessibility(page, "diary-dark");
   await page.screenshot({
     path: join(directory, "diary-dark.png"),
@@ -264,7 +289,7 @@ try {
     );
   }
   if (process.argv.includes("--photos")) {
-    await verifyPhotoPersistence(page, !repeat);
+    await verifyPhotoPersistence(page, !populated);
     results.push(
       "Restart preserves retained JPEG/provenance; explicit removal keeps nutrition",
     );

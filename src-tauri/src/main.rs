@@ -1,7 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod ai;
+mod backup;
 mod db;
+mod file_dialog;
 mod metrics;
 mod nutrition;
 mod photo;
@@ -15,6 +17,145 @@ use std::sync::Mutex;
 use tauri::Manager;
 
 struct Storage(Mutex<Result<Database, String>>);
+#[derive(Default)]
+struct RestorePreview(Mutex<Option<(String, backup::Backup)>>);
+
+#[tauri::command]
+async fn export_data(
+    kind: String,
+    state: tauri::State<'_, Storage>,
+    app: tauri::AppHandle,
+) -> Result<Option<String>, String> {
+    let extension = if kind == "backup" {
+        "calpal"
+    } else if ["diary", "metrics"].contains(&kind.as_str()) {
+        "csv"
+    } else {
+        return Err("Choose a CalPal export.".into());
+    };
+    let filename = format!(
+        "CalPal-{kind}-{}.{}",
+        chrono::Local::now().format("%Y-%m-%d"),
+        extension
+    );
+    // Explicit process-local automation override only works with isolated app data.
+    // Web content cannot supply a destination path or turn this mode on.
+    let path = if std::env::var_os("CALPAL_DATA_DIR").is_some()
+        && std::env::var_os("CALPAL_EXPORT_DIR").is_some()
+    {
+        Some(
+            std::path::PathBuf::from(std::env::var_os("CALPAL_EXPORT_DIR").unwrap())
+                .join(&filename),
+        )
+    } else {
+        let window = app
+            .get_webview_window("main")
+            .ok_or("The main window is unavailable.")?;
+        let extension = extension.to_string();
+        #[cfg(windows)]
+        let parent = window
+            .hwnd()
+            .map_err(|_| "The main window is unavailable.")?
+            .0 as isize;
+        #[cfg(not(windows))]
+        let parent = 0;
+        tauri::async_runtime::spawn_blocking(move || {
+            file_dialog::save(parent, &filename, &extension)
+        })
+        .await
+        .map_err(|_| "The save dialog could not open. Try again.")??
+    };
+    let Some(mut path) = path else {
+        return Ok(None);
+    };
+    if !path
+        .extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| e.eq_ignore_ascii_case(extension))
+    {
+        path.set_extension(extension);
+        if path.exists() {
+            return Err("That export filename already exists. Choose it explicitly in the save dialog to replace it.".into());
+        }
+    }
+    let data = with_db(state, |db| {
+        if kind == "backup" {
+            db.backup()?.encode()
+        } else {
+            db.export_csv(&kind)
+        }
+    })?;
+    backup::write_atomic(&path, data.as_bytes())?;
+    Ok(Some(path.to_string_lossy().into_owned()))
+}
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BackupPreview {
+    token: String,
+    incoming: backup::Summary,
+    current: backup::Summary,
+}
+#[tauri::command]
+async fn preview_backup(
+    data: String,
+    state: tauri::State<'_, Storage>,
+    preview: tauri::State<'_, RestorePreview>,
+) -> Result<BackupPreview, String> {
+    // Clear any previous approval token before validating a different selection.
+    let mut pending = preview
+        .0
+        .lock()
+        .map_err(|_| "Backup preview is unavailable. Restart and retry.")?;
+    *pending = None;
+    let backup = backup::Backup::parse(&data)?;
+    let current = with_db(state, |db| Ok(db.backup()?.summary()))?;
+    let incoming = backup.summary();
+    let token = uuid::Uuid::new_v4().to_string();
+    *pending = Some((token.clone(), backup));
+    Ok(BackupPreview {
+        token,
+        incoming,
+        current,
+    })
+}
+#[tauri::command]
+fn discard_backup(preview: tauri::State<'_, RestorePreview>) -> Result<(), String> {
+    *preview
+        .0
+        .lock()
+        .map_err(|_| "Backup preview is unavailable.")? = None;
+    Ok(())
+}
+#[tauri::command]
+async fn restore_backup(
+    token: String,
+    state: tauri::State<'_, Storage>,
+    preview: tauri::State<'_, RestorePreview>,
+) -> Result<String, String> {
+    let mut pending = preview
+        .0
+        .lock()
+        .map_err(|_| "Backup preview is unavailable. Restart and retry.")?;
+    let (expected, backup) = pending
+        .as_ref()
+        .ok_or("Choose and preview a backup before restoring.")?;
+    if expected != &token {
+        return Err("This preview expired. Choose the backup again.".into());
+    }
+    let result = with_db(state, |db| {
+        let path = db
+            .connection
+            .path()
+            .ok_or("The data folder is unavailable. Current records are unchanged.")?;
+        let directory = std::path::Path::new(path)
+            .parent()
+            .ok_or("The data folder is unavailable.")?
+            .join("recovery");
+        db.restore_backup(backup, &directory)
+    })?;
+    *pending = None;
+    Ok(result)
+}
 
 fn with_db<T>(
     state: tauri::State<'_, Storage>,
@@ -321,12 +462,14 @@ fn main() {
                 Database::open(&directory.join("calpal.sqlite3"))
             })();
             app.manage(Storage(Mutex::new(database)));
+            app.manage(RestorePreview::default());
             app.manage(ai::AiJobs::default());
             app.manage(photo::Photos::default());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             get_day,
+            export_data,preview_backup,restore_backup,discard_backup,
             save_entry,
             delete_entry,
             restore_entry,

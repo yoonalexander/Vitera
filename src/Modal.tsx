@@ -14,6 +14,7 @@ export function Modal({
   active?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const lastFocus = useRef<HTMLElement | null>(null);
   const titleId = useId();
   useEffect(() => {
     if (!active) return;
@@ -21,10 +22,14 @@ export function Modal({
     const dialog = ref.current!;
     dialog.showModal();
     (
+      (lastFocus.current?.isConnected ? lastFocus.current : null) ??
       dialog.querySelector<HTMLElement>("[data-autofocus]") ??
       dialog.querySelector<HTMLElement>("input, select, textarea")
     )?.focus();
     return () => {
+      if (dialog.contains(document.activeElement)) {
+        lastFocus.current = document.activeElement as HTMLElement;
+      }
       dialog.close();
       previous?.focus();
     };

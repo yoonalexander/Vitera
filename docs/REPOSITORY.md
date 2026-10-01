@@ -2,7 +2,7 @@
 
 ## Scope and state
 
-Milestones 1–5 implement the Windows offline diary, nutrition, calorie targets, metrics, recipes and optional local AI descriptions/photos. The runtime, food catalog and lockfiles are included; generated installers, test records, model outputs and screenshots remain local and ignored. No paid services or shared AI credentials are configured.
+Milestones 1–6 implement the Windows offline diary, nutrition, calorie targets, metrics, recipes and optional local AI descriptions/photos, CSV exports and complete backup/restore. The runtime, food catalog and lockfiles are included; generated installers, test records, model outputs and screenshots remain local and ignored. No paid services or shared AI credentials are configured.
 
 The owner confirmed Windows desktop. The stack is Tauri 2, React, TypeScript, Vite, and SQLite bundled through rusqlite. Exact resolved dependencies are in `package-lock.json` and `src-tauri/Cargo.lock`.
 
@@ -35,6 +35,7 @@ src/
   MetricsUI.tsx   # measurements, water, accessible trends and history
   RecipesUI.tsx   # recipe versions/portions and reusable meals
   AIUI.tsx        # local AI setup, cancellation and editable item review
+  DataUI.tsx      # CSV export, backup preview and replacement/recovery
   PhotoUI.tsx     # retained local photo viewing/removal
   ai.ts           # typed text/photo interface and review validation
   Modal.tsx       # shared keyboard-accessible native dialog
@@ -67,12 +68,12 @@ npm.cmd test
 npm.cmd run test:native
 & "$env:USERPROFILE\.cargo\bin\cargo.exe" fmt --manifest-path src-tauri/Cargo.toml -- --check
 & "$env:USERPROFILE\.cargo\bin\cargo.exe" clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
-npm.cmd run tauri -- build --debug
+npm.cmd run tauri -- build
 ```
 
-Install Rust formatting/lint components once with `rustup component add rustfmt clippy` if needed. The installer is generated at `src-tauri/target/debug/bundle/nsis/CalPal_0.1.0_x64-setup.exe`. It is a development build, unsigned, and installs per user. WebView2 is required; the installer downloads its bootstrapper if it is absent. The application itself needs no network connection.
+Install Rust formatting/lint components once with `rustup component add rustfmt clippy` if needed. The installer is generated at `src-tauri/target/release/bundle/nsis/CalPal_0.2.0_x64-setup.exe`. It is an optimized personal-release build, unsigned, and installs per user. WebView2 is required; the installer downloads its bootstrapper if it is absent. The application itself needs no network connection.
 
-Ordinary app data resides under `%APPDATA%\com.yoonalexander.calpal\calpal.sqlite3`, separate from the install directory. Migrations run transactionally; unsupported newer schemas are refused without resetting records. Deletes are soft deletes, with Undo for the most recent deletion. Full export/restore belongs to milestone 6.
+Ordinary app data resides under `%APPDATA%\com.yoonalexander.calpal\calpal.sqlite3`, separate from the install directory. Migrations run transactionally; unsupported newer schemas are refused without resetting records. Deletes are soft deletes, with Undo for the most recent deletion. See [release, backup and recovery](RELEASE.md) for complete export/restore.
 
 ### Installed-app checks
 
@@ -99,6 +100,8 @@ npm.cmd run test:installed -- --nutrition --metrics-recipes --ai --photos --phot
 ```
 
 The downloader is a developer script, never invoked by the application. It saves dataset photos and reference portions/calories under ignored `artifacts/photo-benchmark`. The live test defaults to the already installed `gemma3:4b` for vision and `gemma4:e4b-it-q8_0` for structured drafts; `CALPAL_VISION_MODEL` and `CALPAL_DRAFT_MODEL` select other installed models. It records uncorrected drafts and actual errors separately from manually corrected diary saves. It never downloads an AI model. Reinstall checks on a successful full smoke directory use `-- --verify-existing --nutrition --metrics-recipes --ai --photos --photos-live`; this validates stored values and retained images without repeating inference. Additional live photo runs should use a fresh smoke directory to avoid adding repeated evaluation entries.
+
+Milestone 6 checks add `--data-export` to an existing populated smoke directory to verify CSV/backup files, invalid imports, preview cancellation and accessibility. The child process alone receives `CALPAL_EXPORT_DIR` alongside its isolated `CALPAL_DATA_DIR`; production launches use the Windows save dialog. For restore, set `CALPAL_IMPORT_BACKUP` to a previously exported populated `.calpal` file and run a fresh smoke directory with `--data-import --nutrition --metrics-recipes --ai --photos --photos-live`. That mode initializes a synthetic replacement record, restores/re-recovers the backup, compares all data tables and checks existing records after restart; it does not rerun model inference. See [Milestone 6 results and limits](VERIFICATION-M6.md).
 
 The native schema is version 5, adding photo retention receipts and JPEG attachments to the version-4 AI configuration/save receipts. Originals and prepared temporary images are never written to a file; retained attachments are transactional SQLite blobs. See [Milestone 5 verification](VERIFICATION-M5.md) for source references, inference limitations and installer evidence.
 

@@ -1,6 +1,6 @@
 # CalPal roadmap
 
-Status: milestones 0–5 completed. Milestone 6 remains proposed and unimplemented.
+Status: milestones 0–6 completed. The personal Windows release is version 0.2.0; verification limits are recorded below.
 
 Complete and verify one requested milestone at a time. Record actual results below the milestone when implemented; a proposed acceptance criterion is not a passed test.
 
@@ -72,7 +72,7 @@ Acceptance: correct a multi-item meal draft and save it once. Verify malformed r
 
 Completed on 2026-10-01. Added single-photo upload and drag-and-drop, optional meal context, bounded native decoding, orientation correction and metadata-free resized JPEG preparation. Photo observations and structured extraction can use separately configured local models; both are checked, displayed and preserved in provenance. The editable review preserves uncertainty, local-source calculations and explicit confirmation. Temporary images stay in process memory; optional retained JPEGs save atomically with entries and can be removed without changing nutrition. No hosted provider or paid fallback is configured.
 
-Verification: 29 native tests and 6 frontend domain tests, build/type checking, formatting and Rust linting passed. Installed checks cover upload/drop, text-only capability rejection before image transfer, malformed/HTTP/model/network failures, timeout/cancellation, edit preservation, review/save once, retention off by default, cleanup, accessibility, narrow text layout, restart and attachment removal. Real weighed Nutrition5k meals were benchmarked separately and corrected through the visible photo-to-diary flow; actual model errors and unresolved portions are recorded. Schema 4 → 5 preserves earlier records and reinstallation preserves photo provenance and retained attachments. See [Milestone 5 verification and model limits](VERIFICATION-M5.md) and [local AI setup](AI.md). Milestone 6 is deferred.
+Verification: 29 native tests and 6 frontend domain tests, build/type checking, formatting and Rust linting passed. Installed checks cover upload/drop, text-only capability rejection before image transfer, malformed/HTTP/model/network failures, timeout/cancellation, edit preservation, review/save once, retention off by default, cleanup, accessibility, narrow text layout, restart and attachment removal. Real weighed Nutrition5k meals were benchmarked separately and corrected through the visible photo-to-diary flow; actual model errors and unresolved portions are recorded. Schema 4 → 5 preserves earlier records and reinstallation preserves photo provenance and retained attachments. See [Milestone 5 verification and model limits](VERIFICATION-M5.md) and [local AI setup](AI.md). Milestone 6 release and recovery work is recorded below.
 
 - Add photo upload/drag-and-drop and optional description context.
 - Prepare resized images and strip metadata.
@@ -83,6 +83,10 @@ Verification: 29 native tests and 6 frontend domain tests, build/type checking, 
 Acceptance: exercise the full real photo-to-diary flow on known meals. Record actual errors and failures, confirm text-only models cannot accept photos, test network/model failure recovery, and verify no silent paid fallback or automatic diary writes.
 
 ## Milestone 6 — Personal release
+
+Completed on 2026-10-01. Added diary/metric CSV exports, complete versioned backups, validated replacement previews, durable automatic recovery copies and atomic restores. Secrets and credential references are excluded; restored AI configuration stays off. Polished nested-dialog focus and backup text/error states, synchronized version 0.2.0 and built the optimized unsigned Windows release installer.
+
+Verification: 35 native tests, six frontend domain tests, production build/type checking, formatting and Rust linting passed. The installed offline release verified invalid-file protection, keyboard/accessibility and large text, complete restore/recovery into fresh app data, and persistence of recipes, measurements, diary totals and retained JPEGs. Upgrading a populated 0.1.0 installation to 0.2.0 preserved all 12 table fingerprints. Setup, model downloads, costs and recovery are documented. Tests use this host with WebView2 present; pristine-VM/missing-runtime installation, signing and interactive native file-picker checks remain unverified. Computer Use window access was rejected; installed screenshots were reviewed instead. See [Milestone 6 verification and limits](VERIFICATION-M6.md) and [personal-release guide](RELEASE.md).
 
 - Implement CSV export, complete backup, and validated atomic restore.
 - Polish keyboard use, text scaling, light/dark presentation, empty states, and error copy.

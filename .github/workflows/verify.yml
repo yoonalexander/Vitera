@@ -27,9 +27,9 @@ jobs:
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
       - run: cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
       - run: npm.cmd run test:native
-      - run: npm.cmd run tauri -- build --debug
+      - run: npm.cmd run tauri -- build
       - uses: actions/upload-artifact@v4
         with:
-          name: CalPal-Windows-development-installer
-          path: src-tauri/target/debug/bundle/nsis/*-setup.exe
+          name: CalPal-Windows-personal-release-installer
+          path: src-tauri/target/release/bundle/nsis/*-setup.exe
           if-no-files-found: error

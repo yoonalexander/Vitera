@@ -1,0 +1,51 @@
+# CalPal personal release
+
+Version 0.2.0 is an unsigned, per-user Windows x64 release. Manual food logging, local foods, recipes, targets and measurements work without an account, subscription, AI model or cloud key. See [release verification](VERIFICATION-M6.md) for the tested environment and limits.
+
+## Install and upgrade
+
+Run `CalPal_0.2.0_x64-setup.exe` and launch CalPal from its installed shortcut. Windows may show a trust warning because this personal build is unsigned. No Node.js, Rust or Ollama installation is required to run the packaged app.
+
+Microsoft WebView2 Runtime is required. When it is absent, the installer downloads its bootstrapper and needs internet. For an offline machine, install Microsoft's x64 Evergreen Standalone Runtime first; Microsoft documents the [offline distribution option](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution). The app itself works offline after installation. Installing on a pristine VM without WebView2 has not been tested here.
+
+Before upgrading, save a complete backup. Close CalPal, run the newer installer into the same program folder, and launch it again. Data lives separately under `%APPDATA%\com.yoonalexander.calpal\calpal.sqlite3`; upgrading the program preserves it. Unsupported newer database schemas are refused without resetting records. Keep a copy of the older installer and your backup when trying a new release.
+
+For development, follow [repository setup](REPOSITORY.md). Build the personal-release installer with:
+
+```powershell
+npm.cmd ci
+npm.cmd run tauri -- build
+```
+
+Output: `src-tauri/target/release/bundle/nsis/CalPal_0.2.0_x64-setup.exe`. Generated installers stay outside Git. CI packages the release installer as a private workflow artifact; local checks do not confirm that a remote CI run passed.
+
+## Export and complete backups
+
+Open **Settings → Export & backup**. **Export diary CSV** and **Export metrics CSV** save all active records, with original dates/units, unrounded values and source information. Deleted records are excluded from CSV. Unknown nutrients remain blank; known zero remains zero. Diary CSV includes macro coverage, source snapshots and AI provenance as JSON columns. Metrics include original and canonical values; canonical units are kg, cm, %, and ml for weight, measurements, body fat, and water respectively.
+
+CSV uses UTF-8 with a byte-order mark, quoted fields and CRLF record endings. Quotes, commas and embedded newlines are escaped. Text beginning with a spreadsheet formula marker, including after whitespace, receives a leading apostrophe to prevent evaluation. CSV is for analysis and cannot restore CalPal; it does not contain photo bytes or recipe history.
+
+**Save complete backup** creates a versioned `.calpal` JSON file. It includes appearance, all diary records including soft deletes, logged nutrient/source/AI snapshots, custom/catalog foods and favorites, target versions and estimate inputs, diary completion, all measurement records, recipe and saved-meal versions, AI save receipts, photo retention receipts and every retained JPEG. Temporary drafts, original photos, model weights and WebView2 browser caches are excluded.
+
+Non-secret AI configuration travels with the backup. Secret values and credential references are excluded; Windows Credential Manager is never exported. Restore disables AI and generates a new credential reference so an imported configuration cannot reuse this installation's old authentication. If you no longer want the current optional token stored in Windows, remove it through AI settings before replacing the database. Restore does not delete old OS credentials automatically.
+
+Keep a copy somewhere separate from this device, especially before upgrades. Backups contain personal records and are not encrypted. Removing a retained photo later does not remove its bytes from earlier backups. Version 1 backups support schema 5, at most 64 MiB and 100,000 total rows. If export exceeds a limit, no backup file is written and records remain intact; do not treat CSV as a complete substitute.
+
+## Restore and recovery
+
+1. Open **Settings → Export & backup → Choose CalPal backup** and select the `.calpal` file.
+2. Review its creation time and the current/incoming record counts. Recipe and saved-meal counts are version counts. Restore replaces records rather than merging them.
+3. Check **I understand this replaces all current records**, then choose **Replace records from backup**.
+4. Wait for **Restore complete**. The message shows the recovery-copy path. Check your diary, recipes and measurements; enable AI and set up optional authentication again only when wanted.
+
+The native layer validates format/version, table/column types, dates, ranges, snapshots, identifiers, receipts, JPEG dimensions and database constraints before replacement. Unknown fields, duplicates, invalid records or unsupported formats are rejected without changing the current database. No SQL or database schema is taken from the file.
+
+Before replacement, CalPal writes and flushes a complete recovery backup into `%APPDATA%\com.yoonalexander.calpal\recovery\before-restore-<id>.calpal`. If this write fails, restore stops. Backup capture uses a consistent read transaction. Record replacement holds an immediate SQLite transaction from recovery capture through commit, excluding intervening writes from other app instances; a failure rolls it back. Exports also use a flushed temporary file and atomic replacement, leaving a previous destination intact if saving fails.
+
+To undo a completed restore, choose that recovery file through the same restore screen. Review the counts before applying it; another recovery copy is made first. Recovery files remain in the data folder until you manage them yourself, so keep independent backups too. If storage will not open, preserve the app-data folder and recovery files rather than resetting or deleting the database. Logical deletion is not secure erasure of SQLite pages or existing backups.
+
+## Optional AI and costs
+
+AI is off by default and is unnecessary for the core app. Follow [local AI setup](AI.md) to install models separately and review every estimate before saving. CalPal supports native loopback Ollama only; it makes no hosted inference request or paid fallback.
+
+There is no CalPal subscription, mandatory hosting bill or per-request API fee for this local implementation. Optional inference uses your disk, CPU/GPU, RAM and electricity. Model downloads require internet and can be large; use model-specific licenses and hardware requirements when selecting them. No hosted provider or provider pricing is configured in this release. Signing, public distribution, syncing and paid services remain separate future decisions.

@@ -1,6 +1,6 @@
 [package]
 name = "calpal"
-version = "0.1.0"
+version = "0.2.0"
 description = "Personal offline calorie diary"
 authors = ["Alexander Yoon"]
 edition = "2021"
@@ -21,6 +21,7 @@ tokio = { version = "1", features = ["sync", "time", "macros"] }
 keyring = { version = "3.6", features = ["windows-native"] }
 image = { version = "0.25.10", default-features = false, features = ["jpeg", "png", "webp"] }
 base64 = "0.22"
-
-[dev-dependencies]
 tempfile = "3"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62.2", features = ["Win32_System_Com", "Win32_UI_Shell", "Win32_UI_Shell_Common"] }

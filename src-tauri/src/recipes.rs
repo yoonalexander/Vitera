@@ -160,7 +160,7 @@ pub struct SavedMeal {
     pub items: Vec<MealItem>,
 }
 impl SavedMeal {
-    fn validate(&self) -> Result<()> {
+    pub(crate) fn validate(&self) -> Result<()> {
         uuid::Uuid::parse_str(&self.id).map_err(|_| "Saved meal identifier is invalid.")?;
         if !valid_name(&self.name)
             || self.version < 1

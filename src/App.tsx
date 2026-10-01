@@ -35,6 +35,7 @@ import {
   RecipeHistory,
 } from "./RecipesUI";
 import { Modal } from "./Modal";
+import { DataSettings } from "./DataUI";
 import { AISettings, DescriptionForm } from "./AIUI";
 import { ai } from "./ai";
 import {
@@ -83,6 +84,7 @@ export function App() {
   const [today, setToday] = useState(localDate);
   const [settings, setSettings] = useState<Settings>({ theme: "system" });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [dataOpen, setDataOpen] = useState(false);
   const [composer, setComposer] = useState<Composer | null>(null);
   const [description, setDescription] = useState<{
     photo: boolean;
@@ -1003,7 +1005,7 @@ export function App() {
             setError(null);
           }}
           busy={busy}
-          active={!aiSettingsOpen}
+          active={!aiSettingsOpen && !dataOpen}
         >
           <form
             onSubmit={(event) => {
@@ -1042,6 +1044,13 @@ export function App() {
               >
                 AI settings
               </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setDataOpen(true)}
+              >
+                Export & backup
+              </button>
             </div>
             {error && (
               <p className="error" role="alert">
@@ -1055,6 +1064,19 @@ export function App() {
             </div>
           </form>
         </Modal>
+      )}
+      {dataOpen && (
+        <DataSettings
+          onClose={() => setDataOpen(false)}
+          onRestored={async () => {
+            setUndo(null);
+            setNotice("");
+            setError(null);
+            setSettings(await storage.settings());
+            setMetricToken((v) => v + 1);
+            await refresh();
+          }}
+        />
       )}
     </div>
   );
