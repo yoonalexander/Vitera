@@ -6,9 +6,9 @@ CalPal takes inspiration from the food diary in MyFitnessPal and photo logging i
 
 ## Project status
 
-Milestones 0 and 1: repository/design and the Windows offline foundation. CalPal now has a daily calorie diary with add, edit, delete, and undo, local SQLite persistence, appearance settings, and a development installer.
+Milestones 0–2: repository/design, the Windows offline foundation, and nutrition/targets. CalPal has a daily diary with optional macros, a small versioned USDA catalog, custom foods and portions, favorites and recent entries, manual/adult estimated targets with history, diary completion and weekly summaries. Records persist in local SQLite and work offline.
 
-The first platform is Windows desktop, confirmed by the owner. Built with Tauri 2, React, TypeScript, and bundled SQLite. Recipes and Progress are navigation destinations with clear descriptions of the features planned for milestone 3. AI, food search, target calculations, and metric tracking remain future milestones.
+The first platform is Windows desktop, confirmed by the owner. Built with Tauri 2, React, TypeScript, and bundled SQLite. Progress shows weekly diary coverage; recipes and body metrics remain milestone 3. AI and export/restore remain later milestones.
 
 ## Run and build
 
@@ -39,6 +39,8 @@ See [development and verification instructions](docs/REPOSITORY.md) for checks a
 - [Milestones and acceptance criteria](docs/ROADMAP.md)
 - [Repository setup and development conventions](docs/REPOSITORY.md)
 - [Milestone 1 verification](docs/VERIFICATION.md)
+- [Milestone 2 verification](docs/VERIFICATION-M2.md)
+- [Offline food catalog sources](catalog/README.md)
 
 ## Cost approach
 

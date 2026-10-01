@@ -20,6 +20,7 @@ jobs:
       - run: npm.cmd ci
       - run: npm.cmd run format:check
       - run: npm.cmd run build
+      - run: npm.cmd test
       - run: rustup update stable
       - run: rustup default stable
       - run: rustup component add rustfmt clippy

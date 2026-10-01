@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import {
   storage,
@@ -18,172 +11,37 @@ import {
   type EntryInput,
   type Meal,
   type Settings,
+  type Library,
+  type Week,
+  type Food,
+  type Goal,
+  macroLabel,
+  repeatInput,
+  foodInput,
 } from "./storage";
+import { Modal } from "./Modal";
+import {
+  FoodForm,
+  CustomFoodForm,
+  GoalForm,
+  WeeklySummary,
+} from "./NutritionUI";
 
 type Page = "Today" | "Recipes" | "Progress";
-type Composer = { id: string; date: string; meal: Meal; entry?: Entry };
-
-function Modal({
-  title,
-  children,
-  onClose,
-  busy,
-}: {
-  title: string;
-  children: ReactNode;
-  onClose: () => void;
-  busy: boolean;
-}) {
-  const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null;
-    const dialog = ref.current!;
-    dialog.showModal();
-    dialog
-      .querySelector<HTMLElement>("[data-autofocus], input, select, textarea")
-      ?.focus();
-    return () => {
-      dialog.close();
-      previous?.focus();
-    };
-  }, []);
-  return (
-    <dialog
-      ref={ref}
-      aria-labelledby="dialog-title"
-      onCancel={(event) => {
-        event.preventDefault();
-        if (!busy) onClose();
-      }}
-    >
-      <div className="modal-heading">
-        <h2 id="dialog-title">{title}</h2>
-        <button
-          type="button"
-          className="icon-button"
-          aria-label="Close dialog"
-          onClick={onClose}
-          disabled={busy}
-        >
-          ×
-        </button>
-      </div>
-      {children}
-    </dialog>
-  );
-}
-
-function FoodForm({
-  composer,
-  onSave,
-  onClose,
-  busy,
-  error,
-}: {
-  composer: Composer;
-  onSave: (input: EntryInput) => void;
-  onClose: () => void;
-  busy: boolean;
-  error: string | null;
-}) {
-  const [name, setName] = useState(composer.entry?.name ?? "");
-  const [kcal, setKcal] = useState(
-    composer.entry ? String(composer.entry.kcal) : "",
-  );
-  const [meal, setMeal] = useState<Meal>(composer.meal);
-  const [date, setDate] = useState(composer.date);
-  function submit(event: FormEvent) {
-    event.preventDefault();
-    onSave({
-      id: composer.id,
-      date,
-      meal,
-      name,
-      kcal: Number(kcal),
-      revision: composer.entry?.revision ?? null,
-    });
-  }
-  return (
-    <Modal
-      title={composer.entry ? "Edit food" : "Add food"}
-      onClose={onClose}
-      busy={busy}
-    >
-      <p className="form-intro">A name and calories are all you need.</p>
-      <form onSubmit={submit}>
-        <fieldset disabled={busy}>
-          <label>
-            Food name
-            <input
-              data-autofocus=""
-              name="name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="e.g. Lunch bowl"
-              required
-              maxLength={120}
-            />
-          </label>
-          <label>
-            Calories (kcal)
-            <input
-              name="kcal"
-              type="number"
-              inputMode="decimal"
-              value={kcal}
-              onChange={(event) => setKcal(event.target.value)}
-              min="0"
-              max="100000"
-              step="any"
-              placeholder="0"
-              required
-            />
-          </label>
-          <div className="form-row">
-            <label>
-              Meal
-              <select
-                value={meal}
-                onChange={(event) => setMeal(event.target.value as Meal)}
-              >
-                {meals.map((value) => (
-                  <option key={value}>{value}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Date
-              <input
-                type="date"
-                required
-                value={date}
-                onChange={(event) => setDate(event.target.value)}
-              />
-            </label>
-          </div>
-        </fieldset>
-        {error && (
-          <p role="alert" className="error">
-            {error}
-          </p>
-        )}
-        <div className="form-actions">
-          <button type="button" onClick={onClose} disabled={busy}>
-            Cancel
-          </button>
-          <button className="primary" type="submit" disabled={busy}>
-            {busy ? "Saving…" : "Save to diary"}
-          </button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
+export type Composer = { id: string; date: string; meal: Meal; entry?: Entry };
 
 export function App() {
   const [page, setPage] = useState<Page>("Today");
   const [date, setDate] = useState(localDate);
   const [day, setDay] = useState<Day | null>(null);
+  const [library, setLibrary] = useState<Library>({ foods: [], recent: [] });
+  const [week, setWeek] = useState<Week | null>(null);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [goalOpen, setGoalOpen] = useState(false);
+  const [customFood, setCustomFood] = useState<Food | null | undefined>(
+    undefined,
+  );
+  const [today, setToday] = useState(localDate);
   const [settings, setSettings] = useState<Settings>({ theme: "system" });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [composer, setComposer] = useState<Composer | null>(null);
@@ -200,14 +58,40 @@ export function App() {
     const token = ++request.current;
     setLoading(true);
     try {
-      const result = await storage.day(date);
-      if (token === request.current) setDay(result);
+      const [result, library, week, goals] = await Promise.all([
+        storage.day(date),
+        storage.library(),
+        storage.week(date),
+        storage.goals(),
+      ]);
+      if (token === request.current) {
+        setDay(result);
+        setLibrary(library);
+        setWeek(week);
+        setGoals(goals);
+      }
     } catch (failure) {
       if (token === request.current) setError(String(failure));
     } finally {
       if (token === request.current) setLoading(false);
     }
   }, [date]);
+
+  useEffect(() => {
+    const check = () => {
+      const current = localDate();
+      if (current !== today) {
+        setToday(current);
+        setDate((selected) => (selected === today ? current : selected));
+      }
+    };
+    const timer = window.setInterval(check, 15000);
+    window.addEventListener("focus", check);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", check);
+    };
+  }, [today]);
 
   useEffect(() => {
     if (!native) {
@@ -354,26 +238,30 @@ export function App() {
             previews do not store personal records.
           </div>
         )}
-        {error && !composer && !settingsOpen && (
-          <div className="error" role="alert">
-            {error}{" "}
-            <button
-              onClick={() => {
-                setError(null);
-                void refresh();
-              }}
-              disabled={busy}
-            >
-              Retry loading
-            </button>
-          </div>
-        )}
+        {error &&
+          !composer &&
+          !settingsOpen &&
+          !goalOpen &&
+          customFood === undefined && (
+            <div className="error" role="alert">
+              {error}{" "}
+              <button
+                onClick={() => {
+                  setError(null);
+                  void refresh();
+                }}
+                disabled={busy}
+              >
+                Retry loading
+              </button>
+            </div>
+          )}
         <div className="page-heading">
           <div>
             <p className="eyebrow">YOUR DAILY DIARY</p>
             <h1>
               {page === "Today"
-                ? date === localDate()
+                ? date === today
                   ? "Today"
                   : "Food diary"
                 : page}
@@ -448,6 +336,185 @@ export function App() {
                 </p>
               </div>
             </section>
+            <section
+              className="nutrition-summary"
+              aria-label="Nutrition and target"
+            >
+              <div className="target-line">
+                <div>
+                  <p className="muted">Daily target</p>
+                  <p data-testid="daily-target">
+                    {day?.target
+                      ? `${formatKcal(day.target.kcal)} kcal${day.target.estimate ? " · estimate" : ""}`
+                      : "Not set"}
+                  </p>
+                </div>
+                <div>
+                  <p className="muted">
+                    {day?.target && day.totalKcal > day.target.kcal
+                      ? "Over target"
+                      : "Remaining"}
+                  </p>
+                  <p>
+                    {day?.target
+                      ? `${formatKcal(Math.abs(day.target.kcal - day.totalKcal))} kcal`
+                      : "—"}
+                  </p>
+                </div>
+                <button
+                  disabled={disabled}
+                  onClick={() => {
+                    setError(null);
+                    setGoalOpen(true);
+                  }}
+                >
+                  Set target
+                </button>
+              </div>
+              {day?.target && (
+                <progress
+                  className="target-progress"
+                  aria-label="Calories toward daily target"
+                  max={day.target.kcal}
+                  value={Math.min(day.totalKcal, day.target.kcal)}
+                />
+              )}
+              <div className="macro-summary">
+                {day &&
+                  (["protein", "carbohydrate", "fat"] as const).map((key) => (
+                    <div key={key}>
+                      <span className="muted">
+                        {key === "carbohydrate"
+                          ? "Carbohydrate"
+                          : key === "protein"
+                            ? "Protein"
+                            : "Fat"}
+                      </span>
+                      <p>{macroLabel(day[key])}</p>
+                    </div>
+                  ))}
+              </div>
+              <div className="completion-line">
+                <p>
+                  {day?.complete ? "Diary complete" : "Diary incomplete"}
+                  <span className="muted">
+                    Changes to entries reopen the day.
+                  </span>
+                </p>
+                <button
+                  disabled={disabled}
+                  aria-pressed={day?.complete ?? false}
+                  onClick={() =>
+                    void mutate(async () => {
+                      await storage.complete(date, !day?.complete);
+                      await refresh();
+                    })
+                  }
+                >
+                  {day?.complete ? "Reopen day" : "Mark day complete"}
+                </button>
+              </div>
+            </section>
+            <section className="repeat-section" aria-label="Repeat foods">
+              <h2>Log again</h2>
+              <p className="muted">
+                One click logs the saved portion and meal to {date}.
+              </p>
+              <div className="repeat-foods">
+                {library.recent.map((entry) => (
+                  <button
+                    key={entry.id}
+                    disabled={disabled}
+                    aria-label={`Add recent ${entry.name}`}
+                    onClick={() => save(repeatInput(entry, date))}
+                  >
+                    {entry.name}
+                    <span>
+                      {formatKcal(entry.kcal)} kcal · {entry.meal}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              {!library.recent.length && (
+                <p className="muted">Your recent entries will appear here.</p>
+              )}
+              {library.foods.some((f) => f.favorite) && (
+                <>
+                  <h3>Favorites</h3>
+                  <p className="muted">
+                    Adds one first listed portion (or the nutrition basis), to
+                    Lunch. Edit any portion in the diary.
+                  </p>
+                  <div className="repeat-foods">
+                    {library.foods
+                      .filter((f) => f.favorite)
+                      .map((food) => (
+                        <button
+                          key={food.id}
+                          aria-label={`Add favorite ${food.name}`}
+                          disabled={disabled}
+                          onClick={() => save(foodInput(food, date))}
+                        >
+                          {food.name}
+                          <span>
+                            {food.portions[0]?.label ??
+                              `${food.basisQuantity} ${food.basisUnit}`}
+                          </span>
+                        </button>
+                      ))}
+                  </div>
+                </>
+              )}
+              <details>
+                <summary>Food library ({library.foods.length})</summary>
+                <button
+                  disabled={disabled}
+                  onClick={() => {
+                    setError(null);
+                    setCustomFood(null);
+                  }}
+                >
+                  Create custom food
+                </button>
+                <div className="library-list">
+                  {library.foods.map((food) => (
+                    <div className="library-row" key={food.id}>
+                      <div>
+                        <p>{food.name}</p>
+                        <p className="source-note">
+                          {food.state} · {food.source} · v{food.version}
+                        </p>
+                      </div>
+                      <button
+                        aria-label={`${food.favorite ? "Unfavorite" : "Favorite"} ${food.name}`}
+                        aria-pressed={food.favorite}
+                        disabled={disabled}
+                        onClick={() =>
+                          void mutate(async () => {
+                            await storage.favorite(food);
+                            await refresh();
+                          })
+                        }
+                      >
+                        {food.favorite ? "★ Saved" : "☆ Favorite"}
+                      </button>
+                      {food.source === "Custom label/manual" && (
+                        <button
+                          aria-label={`Edit custom ${food.name}`}
+                          disabled={disabled}
+                          onClick={() => {
+                            setError(null);
+                            setCustomFood(food);
+                          }}
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            </section>
             <div className="diary" aria-busy={loading}>
               {meals.map((meal) => {
                 const entries =
@@ -481,7 +548,14 @@ export function App() {
                         <div className="entry" key={entry.id}>
                           <div>
                             <p className="entry-name">{entry.name}</p>
-                            <p className="entry-source">Manual entry</p>
+                            <p className="entry-source">
+                              {entry.foodPortion
+                                ? `${entry.foodPortion.quantity} ${entry.foodPortion.unit.startsWith("portion:") ? entry.foodPortion.food.portions[Number(entry.foodPortion.unit.slice(8))]?.label : entry.foodPortion.unit} · ${entry.foodPortion.food.state} · ${entry.foodPortion.food.source} · v${entry.foodPortion.food.version}`
+                                : "Manual entry"}
+                              {entry.energyType?.startsWith("derived")
+                                ? " · energy derived (4/4/9)"
+                                : ""}
+                            </p>
                           </div>
                           <span className="entry-kcal">
                             {formatKcal(entry.kcal)}{" "}
@@ -515,6 +589,14 @@ export function App() {
                 );
               })}
             </div>
+          </>
+        ) : page === "Progress" ? (
+          <>
+            <WeeklySummary week={week} />
+            <p className="storage-note muted">
+              Weight and body measurements are planned for milestone 3.
+            </p>
+            <button onClick={() => setPage("Today")}>Back to diary</button>
           </>
         ) : (
           <section className="future-feature">
@@ -571,6 +653,7 @@ export function App() {
         <FoodForm
           key={composer.id}
           composer={composer}
+          library={library}
           onSave={save}
           onClose={() => {
             setComposer(null);
@@ -578,6 +661,44 @@ export function App() {
           }}
           busy={busy}
           error={error}
+        />
+      )}
+      {customFood !== undefined && (
+        <CustomFoodForm
+          food={customFood}
+          busy={busy}
+          error={error}
+          onClose={() => {
+            setCustomFood(undefined);
+            setError(null);
+          }}
+          onSave={(food) =>
+            void mutate(async () => {
+              await storage.saveFood(food);
+              setCustomFood(undefined);
+              setNotice(`Saved custom food ${food.name}.`);
+              await refresh();
+            })
+          }
+        />
+      )}
+      {goalOpen && (
+        <GoalForm
+          goals={goals}
+          busy={busy}
+          error={error}
+          onClose={() => {
+            setGoalOpen(false);
+            setError(null);
+          }}
+          onSave={(goal) =>
+            void mutate(async () => {
+              await storage.saveGoal(goal);
+              setGoalOpen(false);
+              setNotice(`Target applied from ${goal.effectiveDate}.`);
+              await refresh();
+            })
+          }
         />
       )}
       {settingsOpen && (

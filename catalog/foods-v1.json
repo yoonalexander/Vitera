@@ -1,0 +1,206 @@
+[
+  {
+    "id": "usda-v1-173944",
+    "version": 1,
+    "name": "Bananas, raw",
+    "state": "Raw",
+    "source": "USDA SR Legacy (April 2018), catalog v1",
+    "sourceId": "173944",
+    "basisQuantity": 100,
+    "basisUnit": "g",
+    "density": null,
+    "nutrients": {
+      "kcal": 89,
+      "protein": 1.09,
+      "carbohydrate": 22.84,
+      "fat": 0.33
+    },
+    "portions": [
+      {
+        "label": "1 NLEA serving",
+        "quantity": 126
+      },
+      {
+        "label": "1 extra large (9\" or longer)",
+        "quantity": 152
+      },
+      {
+        "label": "1 large (8\" to 8-7/8\" long)",
+        "quantity": 136
+      },
+      {
+        "label": "1 cup, sliced",
+        "quantity": 150
+      },
+      {
+        "label": "1 small (6\" to 6-7/8\" long)",
+        "quantity": 101
+      },
+      {
+        "label": "1 extra small (less than 6\" long)",
+        "quantity": 81
+      },
+      {
+        "label": "1 medium (7\" to 7-7/8\" long)",
+        "quantity": 118
+      },
+      {
+        "label": "1 cup, mashed",
+        "quantity": 225
+      }
+    ],
+    "favorite": false
+  },
+  {
+    "id": "usda-v1-173424",
+    "version": 1,
+    "name": "Egg, whole, cooked, hard-boiled",
+    "state": "Cooked",
+    "source": "USDA SR Legacy (April 2018), catalog v1",
+    "sourceId": "173424",
+    "basisQuantity": 100,
+    "basisUnit": "g",
+    "density": null,
+    "nutrients": {
+      "kcal": 155,
+      "protein": 12.58,
+      "carbohydrate": 1.12,
+      "fat": 10.61
+    },
+    "portions": [
+      {
+        "label": "1 tbsp",
+        "quantity": 8.5
+      },
+      {
+        "label": "1 cup, chopped",
+        "quantity": 136
+      },
+      {
+        "label": "1 large",
+        "quantity": 50
+      }
+    ],
+    "favorite": false
+  },
+  {
+    "id": "usda-v1-168878",
+    "version": 1,
+    "name": "Rice, white, long-grain, regular, enriched, cooked",
+    "state": "Cooked",
+    "source": "USDA SR Legacy (April 2018), catalog v1",
+    "sourceId": "168878",
+    "basisQuantity": 100,
+    "basisUnit": "g",
+    "density": null,
+    "nutrients": {
+      "kcal": 130,
+      "protein": 2.69,
+      "carbohydrate": 28.17,
+      "fat": 0.28
+    },
+    "portions": [
+      {
+        "label": "1 cup",
+        "quantity": 158
+      }
+    ],
+    "favorite": false
+  },
+  {
+    "id": "usda-v1-171477",
+    "version": 1,
+    "name": "Chicken, broilers or fryers, breast, meat only, cooked, roasted",
+    "state": "Cooked",
+    "source": "USDA SR Legacy (April 2018), catalog v1",
+    "sourceId": "171477",
+    "basisQuantity": 100,
+    "basisUnit": "g",
+    "density": null,
+    "nutrients": {
+      "kcal": 165,
+      "protein": 31.02,
+      "carbohydrate": 0,
+      "fat": 3.57
+    },
+    "portions": [
+      {
+        "label": "1 cup, chopped or diced",
+        "quantity": 140
+      },
+      {
+        "label": "1 unit (yield from 1 lb ready-to-cook chicken)",
+        "quantity": 52
+      },
+      {
+        "label": "0.5 breast, bone and skin removed",
+        "quantity": 86
+      }
+    ],
+    "favorite": false
+  },
+  {
+    "id": "usda-v1-173904",
+    "version": 1,
+    "name": "Cereals, oats, regular and quick, not fortified, dry",
+    "state": "Dry",
+    "source": "USDA SR Legacy (April 2018), catalog v1",
+    "sourceId": "173904",
+    "basisQuantity": 100,
+    "basisUnit": "g",
+    "density": null,
+    "nutrients": {
+      "kcal": 379,
+      "protein": 13.15,
+      "carbohydrate": 67.7,
+      "fat": 6.52
+    },
+    "portions": [
+      {
+        "label": "1 cup",
+        "quantity": 81
+      },
+      {
+        "label": "0.33 cup",
+        "quantity": 27
+      }
+    ],
+    "favorite": false
+  },
+  {
+    "id": "usda-v1-171265",
+    "version": 1,
+    "name": "Milk, whole, 3.25% milkfat, with added vitamin D",
+    "state": "As sold",
+    "source": "USDA SR Legacy (April 2018), catalog v1",
+    "sourceId": "171265",
+    "basisQuantity": 100,
+    "basisUnit": "g",
+    "density": null,
+    "nutrients": {
+      "kcal": 61,
+      "protein": 3.15,
+      "carbohydrate": 4.8,
+      "fat": 3.25
+    },
+    "portions": [
+      {
+        "label": "1 fl oz",
+        "quantity": 30.5
+      },
+      {
+        "label": "1 cup",
+        "quantity": 244
+      },
+      {
+        "label": "1 tbsp",
+        "quantity": 15
+      },
+      {
+        "label": "1 quart",
+        "quantity": 976
+      }
+    ],
+    "favorite": false
+  }
+]

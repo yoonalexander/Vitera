@@ -1,8 +1,8 @@
 # CalPal design
 
-Status: milestone 1 foundation implemented; later features remain proposed. Date: 2026-09-30.
+Status: milestones 1–2 implemented; later features remain proposed. Date: 2026-10-01.
 
-This document describes the complete intended product. The Windows offline diary foundation is implemented in milestone 1; the roadmap identifies the remaining work. AI model selection remains provisional.
+This document describes the complete intended product. The Windows offline diary foundation and nutrition/targets are implemented in milestones 1–2; the roadmap identifies the remaining work. AI model selection remains provisional.
 
 ## 1. Product intent
 
@@ -302,4 +302,4 @@ Check offline logging, persistence after restart, keyboard access, text scaling,
 4. Preferred units, meal groups, metrics, and initial food-catalog coverage.
 5. Exact visual palette and whether to retain optional meal photos.
 
-The owner authorized milestone 1 and confirmed Windows desktop. Remaining decisions can use the defaults in this proposal and stay editable. Later milestones require separate requests; this implementation stops at the offline foundation.
+The owner authorized milestones 1 and 2 and confirmed Windows desktop. Remaining decisions can use the defaults in this proposal and stay editable. Later milestones require separate requests; this implementation stops at nutrition and calorie targets. Catalog coverage is deliberately six USDA staples plus user-defined foods. Goal changes apply today or later to preserve past days; adult estimates require explicit preview and application. See [Milestone 2 verification](VERIFICATION-M2.md) for delivered behavior and boundaries.

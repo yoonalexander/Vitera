@@ -1,6 +1,6 @@
 # CalPal roadmap
 
-Status: milestones 0 and 1 completed. Milestones 2–6 remain proposed and unimplemented.
+Status: milestones 0–2 completed. Milestones 3–6 remain proposed and unimplemented.
 
 Complete and verify one requested milestone at a time. Record actual results below the milestone when implemented; a proposed acceptance criterion is not a passed test.
 
@@ -30,6 +30,10 @@ Verification: frontend build/type checking, formatting, four native storage test
 Acceptance: install, launch, log/edit/delete an entry offline, restart, and verify the record and daily total persist. Verify keyboard access and a clean install. Record any platform prerequisite or signing limitation.
 
 ## Milestone 2 — Nutrition and calorie targets
+
+Completed on 2026-10-01. Implemented a versioned offline catalog of six attributable USDA staples, editable custom label/manual foods, measured/named portions, favorites and one-click recent entries. Added optional macros with unknown/partial coverage, manual targets and explicitly previewed adult Mifflin–St Jeor estimates, preserved target/source snapshots, diary completion and seven-day summaries.
+
+Verification: 11 native tests and 3 frontend domain tests, TypeScript/production build, formatting and Rust linting passed. Installed offline checks verified independent estimate examples, partial nutrient totals, source edits preserving logged values, one-action repeats, target history, completion coverage, keyboard access, accessibility and restart persistence. See [Milestone 2 verification details](VERIFICATION-M2.md) for installer/reinstallation evidence, date-boundary checks and limits.
 
 - Add versioned local food data, custom foods, portions, favorites, and recent entries.
 - Add optional macros and preserve unknown nutrients.

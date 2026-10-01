@@ -2,7 +2,7 @@
 
 ## Scope and state
 
-Milestone 1 implements the Windows offline diary foundation. The runtime and lockfiles are included; generated installers, test records, and screenshots remain local and ignored. No paid services or AI credentials are configured.
+Milestones 1–2 implement the Windows offline diary, nutrition and calorie targets. The runtime, food catalog and lockfiles are included; generated installers, test records, and screenshots remain local and ignored. No paid services or AI credentials are configured.
 
 The owner confirmed Windows desktop. The stack is Tauri 2, React, TypeScript, Vite, and SQLite bundled through rusqlite. Exact resolved dependencies are in `package-lock.json` and `src-tauri/Cargo.lock`.
 
@@ -30,13 +30,16 @@ Current implementation:
 
 ```text
 src/
-  App.tsx         # diary, composer, settings, navigation
+  App.tsx         # diary, repeats, settings, navigation
+  NutritionUI.tsx # food/custom-food forms, targets, weekly summaries
+  Modal.tsx       # shared keyboard-accessible native dialog
   storage.ts      # typed native command interface and date/display helpers
   styles.css      # responsive light/dark interface
 src-tauri/
   src/            # native commands, SQLite persistence, storage tests
   migrations/     # ordered SQLite schema migrations
 scripts/          # build launcher and installed-app smoke checks
+catalog/          # immutable, attributed offline food-data versions
 .github/workflows/ # Windows build/test and installer artifact workflow
 docs/             # product design, roadmap, setup notes
 ```
@@ -54,6 +57,7 @@ npm.cmd ci
 npm.cmd run tauri -- dev
 npm.cmd run format:check
 npm.cmd run build
+npm.cmd test
 npm.cmd run test:native
 & "$env:USERPROFILE\.cargo\bin\cargo.exe" fmt --manifest-path src-tauri/Cargo.toml -- --check
 & "$env:USERPROFILE\.cargo\bin\cargo.exe" clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
@@ -72,6 +76,8 @@ Install into a fresh test directory and set the executable path, then run:
 $env:CALPAL_EXE = 'C:\path\to\test-install\calpal.exe'
 npm.cmd run test:installed
 ```
+
+Add `-- --nutrition` to run the Milestone 2 installed workflow, including source snapshots, target history, completion, and simulated local midnight with an open draft. Reinstallation verification for its successful isolated directory uses `npm.cmd run test:installed -- --verify-existing --nutrition`. These checks require the actual built/installed Windows executable, not a browser mock.
 
 The harness launches the actual executable, attaches Playwright to its WebView2 instance, simulates offline operation, and uses the real native SQLite commands. It creates isolated synthetic records, a separate WebView2 profile, screenshots, and results under ignored `artifacts/smoke-*`. It verifies add/edit/delete/undo, date separation, keyboard form submission, dialog focus, navigation, appearance persistence, accessibility in both themes, narrow/200% text layout, and restart persistence. Its temporary remote-debugging port is enabled only in the test child process; normal app launch does not enable it.
 

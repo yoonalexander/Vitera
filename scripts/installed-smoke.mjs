@@ -4,6 +4,10 @@ import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { createServer } from "node:net";
+import {
+  nutritionSmoke,
+  verifyNutritionPersistence,
+} from "./nutrition-smoke.mjs";
 
 // Tests the actual installed WebView2 application and native SQLite commands.
 // All diary records, browser profiles, and screenshots stay in an isolated directory.
@@ -138,6 +142,8 @@ try {
     expect(existing).toBe("650");
     results.push("Existing diary survives installer reinstallation");
   }
+  if (process.argv.includes("--nutrition") && !repeat)
+    results.push(await nutritionSmoke(page, directory, accessibility));
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page
     .getByRole("combobox", { name: "Appearance" })
@@ -178,6 +184,8 @@ try {
   });
   // Browser viewport emulation also checks layout at a narrow width and doubled text size.
   await page.setViewportSize({ width: 420, height: 800 });
+  if (await page.getByRole("button", { name: "Dismiss notification" }).count())
+    await page.getByRole("button", { name: "Dismiss notification" }).click();
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "200%";
   });
@@ -197,6 +205,12 @@ try {
   await expect(
     page.getByRole("button", { name: "Edit Smoke lunch" }),
   ).toBeVisible();
+  if (process.argv.includes("--nutrition")) {
+    await verifyNutritionPersistence(page);
+    results.push(
+      "Restart preserves goals, favorites, custom food versions, original nutrition snapshots and completion coverage",
+    );
+  }
   expect(existsSync(join(dataDirectory, "calpal.sqlite3"))).toBe(true);
   expect(errors).toEqual([]);
   results.push("Actual app restart preserves SQLite diary and settings");
