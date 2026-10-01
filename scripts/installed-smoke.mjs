@@ -12,6 +12,7 @@ import {
   metricsRecipesSmoke,
   verifyMetricsRecipesPersistence,
 } from "./metrics-recipes-smoke.mjs";
+import { aiSmoke, verifyAIPersistence, liveAiEvaluation } from "./ai-smoke.mjs";
 
 // Tests the actual installed WebView2 application and native SQLite commands.
 // All diary records, browser profiles, and screenshots stay in an isolated directory.
@@ -150,6 +151,13 @@ try {
     results.push(await nutritionSmoke(page, directory, accessibility));
   if (process.argv.includes("--metrics-recipes") && !repeat)
     results.push(await metricsRecipesSmoke(page, directory, accessibility));
+  if (process.argv.includes("--ai") && !repeat)
+    results.push(await aiSmoke(page, directory, accessibility));
+  if (
+    process.argv.includes("--ai-live") &&
+    (!repeat || process.argv.includes("--evaluate-live"))
+  )
+    results.push(await liveAiEvaluation(page, directory, accessibility));
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page
     .getByRole("combobox", { name: "Appearance" })
@@ -227,6 +235,12 @@ try {
     );
   }
   expect(existsSync(join(dataDirectory, "calpal.sqlite3"))).toBe(true);
+  if (process.argv.includes("--ai")) {
+    await verifyAIPersistence(page);
+    results.push(
+      "Restart preserves reviewed AI provenance, source snapshots and two-item diary total",
+    );
+  }
   expect(errors).toEqual([]);
   results.push("Actual app restart preserves SQLite diary and settings");
   writeFileSync(

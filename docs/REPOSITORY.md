@@ -2,7 +2,7 @@
 
 ## Scope and state
 
-Milestones 1–3 implement the Windows offline diary, nutrition, calorie targets, metrics and recipes. The runtime, food catalog and lockfiles are included; generated installers, test records, and screenshots remain local and ignored. No paid services or AI credentials are configured.
+Milestones 1–4 implement the Windows offline diary, nutrition, calorie targets, metrics, recipes and optional local AI descriptions. The runtime, food catalog and lockfiles are included; generated installers, test records, model outputs and screenshots remain local and ignored. No paid services or shared AI credentials are configured.
 
 The owner confirmed Windows desktop. The stack is Tauri 2, React, TypeScript, Vite, and SQLite bundled through rusqlite. Exact resolved dependencies are in `package-lock.json` and `src-tauri/Cargo.lock`.
 
@@ -34,6 +34,8 @@ src/
   NutritionUI.tsx # food/custom-food forms, targets, weekly summaries
   MetricsUI.tsx   # measurements, water, accessible trends and history
   RecipesUI.tsx   # recipe versions/portions and reusable meals
+  AIUI.tsx        # local AI setup, cancellation and editable item review
+  ai.ts           # typed text-provider interface and review validation
   Modal.tsx       # shared keyboard-accessible native dialog
   storage.ts      # typed native command interface and date/display helpers
   styles.css      # responsive light/dark interface
@@ -42,6 +44,7 @@ src-tauri/
   migrations/     # ordered SQLite schema migrations
 scripts/          # build launcher and installed-app smoke checks
 catalog/          # immutable, attributed offline food-data versions
+ai/               # versioned provider-neutral structured draft schema
 .github/workflows/ # Windows build/test and installer artifact workflow
 docs/             # product design, roadmap, setup notes
 ```
@@ -83,6 +86,10 @@ Add `-- --nutrition` to run the Milestone 2 installed workflow, including source
 
 For the complete Milestone 1–3 workflow, run `npm.cmd run test:installed -- --nutrition --metrics-recipes`. This checks actual recipe serving/weighed portions, ingredient and recipe version history, saved-meal copies, measurement units, multiple daily records, chart gaps and rolling-mean coverage. Reinstallation checks on its populated smoke directory use `-- --verify-existing --nutrition --metrics-recipes`. Migrations support the earlier schema versions without resetting records.
 
+Add `--ai` to include the installed Milestone 4 fixture workflow. It serves synthetic Ollama replies on an ephemeral loopback port and calls the actual native adapter, review UI and SQLite storage; it does not substitute browser calculation/storage mocks. Add `--ai-live` to separately evaluate a running real local Ollama model and its visible review/save flow. `CALPAL_OLLAMA_MODEL` selects the installed model (default `gemma3:4b`); the live run never pulls a model. Example: `npm.cmd run test:installed -- --nutrition --metrics-recipes --ai --ai-live`. The live evaluation writes raw synthetic-meal results into ignored artifacts; valid drafts and measured errors are reported separately.
+
+Reinstallation checks use `-- --verify-existing --nutrition --metrics-recipes --ai`. For a deliberate additional real-model comparison on that isolated directory, also add `--ai-live --evaluate-live`; only its specifically named synthetic live-review entries are replaced. See [AI setup](AI.md) and [Milestone 4 verification](VERIFICATION-M4.md). The native schema is now version 4, with separate AI configuration and duplicate-save receipts.
+
 The harness launches the actual executable, attaches Playwright to its WebView2 instance, simulates offline operation, and uses the real native SQLite commands. It creates isolated synthetic records, a separate WebView2 profile, screenshots, and results under ignored `artifacts/smoke-*`. It verifies add/edit/delete/undo, date separation, keyboard form submission, dialog focus, navigation, appearance persistence, accessibility in both themes, narrow/200% text layout, and restart persistence. Its temporary remote-debugging port is enabled only in the test child process; normal app launch does not enable it.
 
 To test preservation across a reinstall, reuse the successful smoke directory after reinstalling into the same program directory:
@@ -100,6 +107,6 @@ Report checks distinctly: document verification, unit/integration checks, live-p
 
 Never commit real profile values, diaries, metric records, photos, exports, backups, API keys, signing keys, or model weights. `.gitignore` covers common paths and formats, but review staged files because ignore rules do not classify every possible personal file.
 
-Provider keys will use native OS credential storage. Any future `.env.example` must contain placeholders only, with each field documented; the packaged frontend must never receive a secret through a public build variable.
+Optional local-provider tokens use native Windows Credential Manager. SQLite stores a generated reference only. The frontend can submit a newly entered token through a native command but cannot retrieve the saved value. Any future `.env.example` must contain placeholders only, with each field documented; the packaged frontend must never receive a secret through a public build variable. No hosted-provider adapter is enabled.
 
 No public/open-source license is selected. Revisit licensing if the owner decides to publish or distribute the project beyond personal use.

@@ -24,7 +24,7 @@ pub struct Entry {
     pub nutrition: NutritionSnapshot,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct EntryInput {
     pub id: String,
@@ -128,7 +128,7 @@ impl Database {
         let version: i64 = connection
             .query_row("PRAGMA user_version", [], |row| row.get(0))
             .map_err(sql_error)?;
-        if version > 3 {
+        if version > 4 {
             return Err(
                 "This database requires a newer CalPal version. Existing records were left intact."
                     .into(),
@@ -161,6 +161,16 @@ impl Database {
                 .map_err(sql_error)?;
             transaction
                 .pragma_update(None, "user_version", 3)
+                .map_err(sql_error)?;
+            transaction.commit().map_err(sql_error)?;
+        }
+        if version < 4 {
+            let transaction = connection.transaction().map_err(sql_error)?;
+            transaction
+                .execute_batch(include_str!("../migrations/004_ai_descriptions.sql"))
+                .map_err(sql_error)?;
+            transaction
+                .pragma_update(None, "user_version", 4)
                 .map_err(sql_error)?;
             transaction.commit().map_err(sql_error)?;
         }
@@ -273,7 +283,14 @@ impl Database {
             input.nutrition.macro_coverage = Some(result.coverage);
             input.nutrition.energy_type = Some("recipe ingredient sum".into());
         } else {
-            input.nutrition.energy_type = Some("manual".into());
+            input.nutrition.energy_type = Some(
+                if input.nutrition.ai.is_some() {
+                    "AI-only reviewed estimate"
+                } else {
+                    "manual"
+                }
+                .into(),
+            );
             input.nutrition.macro_coverage = None;
         }
         Nutrients {
@@ -283,6 +300,9 @@ impl Database {
             fat: input.nutrition.fat,
         }
         .validate()?;
+        if let Some(origin) = &input.nutrition.ai {
+            origin.validate()?;
+        }
         if input
             .nutrition
             .timezone

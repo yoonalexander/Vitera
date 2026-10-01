@@ -495,6 +495,57 @@ figcaption {
     grid-template-columns: 1fr;
   }
 }
+
+.entry-methods {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+  font-size: 0.875rem;
+}
+.ai-review-item {
+  border-top: 1px solid var(--line);
+  padding: 16px 0;
+  overflow-wrap: anywhere;
+}
+.ai-assumptions {
+  border-left: 3px solid var(--accent);
+  padding: 8px 16px;
+  margin: 16px 0;
+  line-height: 1.6;
+}
+.ai-assumptions ul {
+  padding-left: 20px;
+}
+.ai-nutrients {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.checkbox-label {
+  flex-direction: row;
+  align-items: center;
+  font-weight: 400;
+}
+.checkbox-label input {
+  width: 20px;
+  min-height: 20px;
+  flex-shrink: 0;
+}
+.ai-auth {
+  margin-top: 24px;
+}
+.entry-assumptions {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+@media (max-width: 620px) {
+  .ai-nutrients {
+    grid-template-columns: 1fr;
+  }
+}
 .date-input {
   margin: 0;
   min-width: 0;

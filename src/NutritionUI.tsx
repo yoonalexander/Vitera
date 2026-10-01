@@ -63,11 +63,13 @@ export function FoodForm({
   composer,
   library,
   onSave,
+  onDescribe,
   ...common
 }: Common & {
   composer: Composer;
   library: Library;
   onSave: (input: EntryInput) => void;
+  onDescribe: () => void;
 }) {
   const [name, setName] = useState(composer.entry?.name ?? "");
   const [kcal, setKcal] = useState(
@@ -130,6 +132,13 @@ export function FoodForm({
         carbohydrate: values.carbohydrate,
         fat: values.fat,
         foodPortion: portion,
+        ai: composer.entry?.ai
+          ? {
+              ...composer.entry.ai,
+              quantity: portion?.quantity ?? composer.entry.ai.quantity,
+              unit: portion?.unit ?? composer.entry.ai.unit,
+            }
+          : null,
         timezone: composer.entry?.timezone ?? blankNutrition().timezone,
       },
     });
@@ -141,6 +150,39 @@ export function FoodForm({
       busy={common.busy}
     >
       <p className="form-intro">Search a food or enter a name and calories.</p>
+      {!composer.entry && (
+        <div className="entry-methods" aria-label="Entry method">
+          <span>Search / manual</span>
+          <button type="button" disabled={common.busy} onClick={onDescribe}>
+            Describe
+          </button>
+          <span className="muted">Photo · coming later</span>
+        </div>
+      )}
+      {composer.entry?.ai && (
+        <details>
+          <summary>Original AI item</summary>
+          <p className="source-note">
+            {composer.entry.ai.model} ·{" "}
+            {composer.entry.ai.originalQuantity ?? "unspecified amount"}{" "}
+            {composer.entry.ai.originalUnit?.startsWith("portion:")
+              ? "named food portion"
+              : (composer.entry.ai.originalUnit ?? "")}{" "}
+            · {composer.entry.ai.originalName}
+          </p>
+          <p className="source-note">
+            Reviewed portion: {composer.entry.ai.quantity}{" "}
+            {composer.entry.ai.unit.startsWith("portion:")
+              ? (composer.entry.foodPortion?.food.portions[
+                  Number(composer.entry.ai.unit.slice(8))
+                ]?.label ?? "named food portion")
+              : composer.entry.ai.unit}
+          </p>
+          {composer.entry.ai.assumptions.map((a, i) => (
+            <p key={i}>{a}</p>
+          ))}
+        </details>
+      )}
       {!composer.entry && (
         <details
           open={searchOpen}

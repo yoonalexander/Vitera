@@ -1,6 +1,6 @@
 # CalPal roadmap
 
-Status: milestones 0–3 completed. Milestones 4–6 remain proposed and unimplemented.
+Status: milestones 0–4 completed. Milestones 5–6 remain proposed and unimplemented.
 
 Complete and verify one requested milestone at a time. Record actual results below the milestone when implemented; a proposed acceptance criterion is not a passed test.
 
@@ -56,6 +56,10 @@ Verification: 18 native tests and 5 frontend domain tests passed, as did build/t
 Acceptance: verify serving and weighed-portion calculations, mixed units, multiple daily measurements, recipe-version history, and persistence after restart. Charts match stored values and show gaps honestly.
 
 ## Milestone 4 — AI descriptions
+
+Completed on 2026-10-01. Implemented provider-neutral text/draft contracts and an optional native Ollama loopback adapter, model/capability checks, Windows Credential Manager authentication, bounded structured parsing, local nutrition matching and editable AI-only estimates. The review retains assumptions and original portions, resolves exact named portions through measured records, blocks unresolved rows, and saves reviewed items atomically with persistent duplicate receipts. Cancellation, errors and late replies preserve edits; manual logging remains available without AI.
+
+Verification: 26 native tests and 6 frontend domain tests, build/type checking, formatting and Rust linting passed. Installed fixtures verified corrected multi-item saving once, malformed replies, HTTP failures, unavailable models, unknown units, missing portions, cancellation, late responses, timeouts, accessibility and narrow text layout. Separately evaluated actual local meal descriptions and the visible real-model review/save workflow; recorded model errors as well as successful drafts. Migration, restart and reinstallation checks preserved earlier diary/nutrition/recipe/metric records and AI provenance. See [Milestone 4 verification details and model limits](VERIFICATION-M4.md) and [local AI setup](AI.md). Photos and hosted providers remain later work.
 
 - Establish provider-neutral input/output contracts and native credential handling.
 - Implement an optional local text-capable provider, capability/readiness checks, and structured draft parsing.

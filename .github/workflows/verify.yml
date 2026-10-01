@@ -1,4 +1,4 @@
-name: Verify Windows foundation
+name: Verify Windows app
 
 on:
   push:

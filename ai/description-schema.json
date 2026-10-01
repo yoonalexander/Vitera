@@ -1,0 +1,52 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["items"],
+  "properties": {
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "foodId",
+          "quantity",
+          "unit",
+          "nutrients",
+          "assumptions",
+          "questions"
+        ],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "foodId": { "type": ["string", "null"] },
+          "quantity": { "type": ["number", "null"] },
+          "unit": { "type": ["string", "null"] },
+          "nutrients": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kcal", "protein", "carbohydrate", "fat"],
+            "properties": {
+              "kcal": { "type": ["number", "null"] },
+              "protein": { "type": ["number", "null"] },
+              "carbohydrate": { "type": ["number", "null"] },
+              "fat": { "type": ["number", "null"] }
+            }
+          },
+          "assumptions": {
+            "type": "array",
+            "maxItems": 12,
+            "items": { "type": "string" }
+          },
+          "questions": {
+            "type": "array",
+            "maxItems": 12,
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

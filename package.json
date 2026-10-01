@@ -11,7 +11,7 @@
     "tauri": "node scripts/tauri.mjs",
     "test:native": "node scripts/tauri.mjs test",
     "test:installed": "node scripts/installed-smoke.mjs",
-    "format:check": "prettier --check src scripts index.html vite.config.ts tsconfig.json package.json .github src-tauri/tauri.conf.json src-tauri/capabilities"
+    "format:check": "prettier --check src scripts ai index.html vite.config.ts tsconfig.json package.json .github src-tauri/tauri.conf.json src-tauri/capabilities"
   },
   "dependencies": {
     "@tauri-apps/api": "2.12.1",

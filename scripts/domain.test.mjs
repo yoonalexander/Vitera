@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { reviewRows, rowIssue } from "../src/ai.ts";
 import {
   localDate,
   shiftDate,
@@ -60,4 +61,41 @@ test("metric display converts canonical values without changing stored precision
   assert.ok(Math.abs(displayMetric(81.28, "in") - 32) < 1e-9);
   assert.equal(displayMetric(500, "l"), 0.5);
   assert.ok(Math.abs(displayMetric(236.5882365, "fl oz (US)") - 8) < 1e-9);
+});
+
+test("AI review blocks missing portions, unsupported units and unconfirmed edits", () => {
+  const draft = {
+    items: [
+      {
+        candidate: {
+          name: "Synthetic meal",
+          foodId: null,
+          quantity: null,
+          unit: "bucket",
+          nutrients: {
+            kcal: 400,
+            protein: null,
+            carbohydrate: null,
+            fat: null,
+          },
+          assumptions: ["Synthetic estimate"],
+          questions: [],
+        },
+        food: null,
+      },
+    ],
+  };
+  const [row] = reviewRows(draft);
+  assert.match(rowIssue(row), /positive portion/);
+  row.quantity = "1";
+  assert.match(rowIssue(row), /supported unit/);
+  row.unit = "serving";
+  assert.match(rowIssue(row), /Confirm/);
+  row.reviewed = true;
+  assert.equal(rowIssue(row), null);
+  assert.equal(row.nutrients.protein, null);
+  const id = row.id;
+  row.nutrients.kcal = -1;
+  assert.match(rowIssue(row), /valid optional macros/);
+  assert.equal(row.id, id);
 });

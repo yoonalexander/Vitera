@@ -37,6 +37,7 @@ export interface NutritionSnapshot {
   energyType: string | null;
   recipePortion?: RecipePortion | null;
   macroCoverage?: MacroCoverage | null;
+  ai?: import("./ai").AiProvenance | null;
 }
 export interface EstimateInput {
   weightKg: number;
@@ -167,6 +168,7 @@ export function repeatInput(entry: Entry, date: string): EntryInput {
     energyType,
     recipePortion,
     macroCoverage,
+    ai,
   } = entry;
   return {
     id: crypto.randomUUID(),
@@ -183,6 +185,7 @@ export function repeatInput(entry: Entry, date: string): EntryInput {
       energyType,
       recipePortion,
       macroCoverage,
+      ai,
       timezone: timezone(),
     },
   };
@@ -308,6 +311,7 @@ export function mealItem(entry: Entry): MealItem {
     macroCoverage,
     timezone,
     energyType,
+    ai,
   } = entry;
   return {
     name: entry.name,
@@ -322,6 +326,7 @@ export function mealItem(entry: Entry): MealItem {
       macroCoverage,
       timezone,
       energyType,
+      ai,
     },
   };
 }

@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod ai;
 mod db;
 mod metrics;
 mod nutrition;
@@ -165,6 +166,67 @@ fn log_meal(input: MealLog, state: tauri::State<'_, Storage>) -> Result<Vec<Entr
     with_db(state, |db| db.log_meal(input))
 }
 
+#[tauri::command]
+fn get_ai_config(state: tauri::State<'_, Storage>) -> Result<ai::AiConfig, String> {
+    with_db(state, |db| db.ai_config().map(|v| v.0))
+}
+#[tauri::command]
+fn save_ai_config(
+    config: ai::AiConfig,
+    state: tauri::State<'_, Storage>,
+) -> Result<ai::AiConfig, String> {
+    with_db(state, |db| db.save_ai_config(config))
+}
+#[tauri::command]
+fn ai_credential_present(state: tauri::State<'_, Storage>) -> Result<bool, String> {
+    let reference = with_db(state, |db| db.ai_config().map(|v| v.1))?;
+    Ok(ai::read_secret(&reference)?.is_some())
+}
+#[tauri::command]
+fn set_ai_credential(
+    secret: Option<String>,
+    state: tauri::State<'_, Storage>,
+) -> Result<(), String> {
+    let reference = with_db(state, |db| db.ai_config().map(|v| v.1))?;
+    ai::set_secret(&reference, secret)
+}
+#[tauri::command]
+async fn check_ai(
+    config: ai::AiConfig,
+    state: tauri::State<'_, Storage>,
+) -> Result<ai::Readiness, String> {
+    let reference = with_db(state, |db| db.ai_config().map(|v| v.1))?;
+    let secret = ai::read_secret(&reference)?;
+    ai::readiness(&config, secret.as_deref()).await
+}
+#[tauri::command]
+async fn describe_meal(
+    input: ai::TextInput,
+    state: tauri::State<'_, Storage>,
+    jobs: tauri::State<'_, ai::AiJobs>,
+) -> Result<ai::TextDraft, String> {
+    let (config, reference, foods) = with_db(state, |db| {
+        let (config, reference) = db.ai_config()?;
+        Ok((config, reference, db.library()?.foods))
+    })?;
+    let secret = ai::read_secret(&reference)?;
+    jobs.describe(config, secret, input, foods).await
+}
+#[tauri::command]
+fn cancel_description(
+    request_id: String,
+    jobs: tauri::State<'_, ai::AiJobs>,
+) -> Result<(), String> {
+    jobs.cancel(&request_id)
+}
+#[tauri::command]
+fn save_ai_draft(
+    entries: Vec<EntryInput>,
+    state: tauri::State<'_, Storage>,
+) -> Result<Vec<Entry>, String> {
+    with_db(state, |db| db.save_ai_entries(entries))
+}
+
 fn main() {
     tauri::Builder::default()
         .setup(|app| {
@@ -179,6 +241,7 @@ fn main() {
                 Database::open(&directory.join("calpal.sqlite3"))
             })();
             app.manage(Storage(Mutex::new(database)));
+            app.manage(ai::AiJobs::default());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -192,7 +255,9 @@ fn main() {
             preview_estimate, preview_portion, set_day_complete, get_week,
             save_metric,delete_metric,get_metric_history,get_metric_labels,
             get_recipe_library,get_recipe_history,save_recipe,preview_recipe,preview_recipe_portion,
-            save_meal,log_meal
+            save_meal,log_meal,
+            get_ai_config,save_ai_config,ai_credential_present,set_ai_credential,check_ai,
+            describe_meal,cancel_description,save_ai_draft
         ])
         .run(tauri::generate_context!())
         .expect("CalPal could not start. Existing records have been left intact.");

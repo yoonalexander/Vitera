@@ -163,6 +163,7 @@ pub struct NutritionSnapshot {
     pub energy_type: Option<String>,
     pub recipe_portion: Option<crate::recipes::RecipePortion>,
     pub macro_coverage: Option<crate::recipes::MacroCoverage>,
+    pub ai: Option<crate::ai::AiProvenance>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

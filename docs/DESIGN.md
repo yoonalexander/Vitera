@@ -1,8 +1,8 @@
 # CalPal design
 
-Status: milestones 1–3 implemented; later features remain proposed. Date: 2026-10-01.
+Status: milestones 1–4 implemented; later features remain proposed. Date: 2026-10-01.
 
-This document describes the complete intended product. The Windows offline diary, nutrition/targets, metrics and recipes are implemented in milestones 1–3; the roadmap identifies the remaining work. AI model selection remains provisional.
+This document describes the complete intended product. The Windows offline diary, nutrition/targets, metrics and recipes are implemented in milestones 1–3. Milestone 4 adds optional local text descriptions with explicit review. The roadmap identifies the remaining work. AI models stay user-selectable; evaluation is recorded separately from application correctness.
 
 ## 1. Product intent
 
@@ -302,4 +302,4 @@ Check offline logging, persistence after restart, keyboard access, text scaling,
 4. Preferred units, meal groups, metrics, and initial food-catalog coverage.
 5. Exact visual palette and whether to retain optional meal photos.
 
-The owner authorized milestones 1–3 and confirmed Windows desktop. Remaining decisions can use the defaults in this proposal and stay editable. Later milestones require separate requests; this implementation stops at metrics and recipes. Catalog coverage is deliberately six USDA staples plus user-defined foods. Goal changes apply today or later to preserve past days; adult estimates require explicit preview and application. Metric defaults use kg/cm/ml, with alternative units available. Recipe ingredients and logged portions retain versioned snapshots; weighed portions require measured finished yield. Saved meals copy independent diary entries atomically. See [Milestone 3 verification](VERIFICATION-M3.md) for delivered behavior and boundaries.
+The owner authorized milestones 1–4 and confirmed Windows desktop. Remaining decisions use the defaults in this proposal and stay editable. Later milestones require separate requests; this implementation stops at AI descriptions. Catalog coverage is deliberately six USDA staples plus user-defined foods. Goal changes apply today or later to preserve past days; adult estimates require explicit preview and application. Metric defaults use kg/cm/ml, with alternative units available. Recipe ingredients and logged portions retain versioned snapshots; weighed portions require measured finished yield. Saved meals copy independent diary entries atomically. AI defaults to off, supports native loopback Ollama only, and requires per-item review. Optional local-proxy tokens use Windows Credential Manager. See [local AI behavior](AI.md) and [Milestone 4 verification](VERIFICATION-M4.md) for delivered behavior and model limits.

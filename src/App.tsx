@@ -35,6 +35,8 @@ import {
   RecipeHistory,
 } from "./RecipesUI";
 import { Modal } from "./Modal";
+import { AISettings, DescriptionForm } from "./AIUI";
+import { ai } from "./ai";
 import {
   FoodForm,
   CustomFoodForm,
@@ -82,6 +84,11 @@ export function App() {
   const [settings, setSettings] = useState<Settings>({ theme: "system" });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [composer, setComposer] = useState<Composer | null>(null);
+  const [description, setDescription] = useState<{
+    date: string;
+    meal: Meal;
+  } | null>(null);
+  const [aiSettingsOpen, setAiSettingsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -286,6 +293,7 @@ export function App() {
         )}
         {error &&
           !composer &&
+          !description &&
           !settingsOpen &&
           !goalOpen &&
           customFood === undefined &&
@@ -635,11 +643,39 @@ export function App() {
                                 ? `${entry.foodPortion.quantity} ${entry.foodPortion.unit.startsWith("portion:") ? entry.foodPortion.food.portions[Number(entry.foodPortion.unit.slice(8))]?.label : entry.foodPortion.unit} · ${entry.foodPortion.food.state} · ${entry.foodPortion.food.source} · v${entry.foodPortion.food.version}`
                                 : entry.recipePortion
                                   ? `${entry.recipePortion.quantity} ${entry.recipePortion.unit} · ${entry.recipePortion.recipe.name} · recipe v${entry.recipePortion.recipe.version}`
-                                  : "Manual entry"}
+                                  : entry.ai
+                                    ? `AI-only reviewed estimate · ${entry.ai.quantity} ${entry.ai.unit}`
+                                    : "Manual entry"}
+                              {entry.ai && (
+                                <span> · AI draft: {entry.ai.model}</span>
+                              )}
                               {entry.energyType?.startsWith("derived")
                                 ? " · energy derived (4/4/9)"
                                 : ""}
                             </p>
+                            {entry.ai && (
+                              <details className="entry-assumptions">
+                                <summary>Estimate assumptions</summary>
+                                <p>
+                                  {entry.ai.originalName} · original portion:{" "}
+                                  {entry.ai.originalQuantity ?? "unspecified"}{" "}
+                                  {entry.ai.originalUnit?.startsWith("portion:")
+                                    ? "named food portion"
+                                    : (entry.ai.originalUnit ?? "")}
+                                </p>
+                                {entry.ai.assumptions.map((a, i) => (
+                                  <p key={i}>{a}</p>
+                                ))}
+                                {entry.ai.questions.map((q, i) => (
+                                  <p key={i}>{q}</p>
+                                ))}
+                                <p className="source-note">
+                                  Reviewed before saving ·{" "}
+                                  {entry.ai.promptVersion} · schema{" "}
+                                  {entry.ai.schemaVersion}
+                                </p>
+                              </details>
+                            )}
                           </div>
                           <span className="entry-kcal">
                             {formatKcal(entry.kcal)}{" "}
@@ -778,6 +814,11 @@ export function App() {
           composer={composer}
           library={library}
           onSave={save}
+          onDescribe={() => {
+            setDescription({ date: composer.date, meal: composer.meal });
+            setComposer(null);
+            setError(null);
+          }}
           onClose={() => {
             setComposer(null);
             setError(null);
@@ -785,6 +826,30 @@ export function App() {
           busy={busy}
           error={error}
         />
+      )}
+      {description && (
+        <DescriptionForm
+          date={description.date}
+          meal={description.meal}
+          foods={library.foods}
+          busy={busy}
+          error={error}
+          onClose={() => {
+            setDescription(null);
+            setError(null);
+          }}
+          onSave={(entries) =>
+            void mutate(async () => {
+              await ai.save(entries);
+              setDescription(null);
+              setNotice(`Saved ${entries.length} reviewed items.`);
+              await refresh();
+            })
+          }
+        />
+      )}
+      {aiSettingsOpen && (
+        <AISettings onClose={() => setAiSettingsOpen(false)} />
       )}
       {customFood !== undefined && (
         <CustomFoodForm
@@ -936,6 +1001,7 @@ export function App() {
             setError(null);
           }}
           busy={busy}
+          active={!aiSettingsOpen}
         >
           <form
             onSubmit={(event) => {
@@ -967,6 +1033,13 @@ export function App() {
                 or upgrading the app preserves them.
               </p>
               <p>No AI connection or account is needed for calorie entries.</p>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setAiSettingsOpen(true)}
+              >
+                AI settings
+              </button>
             </div>
             {error && (
               <p className="error" role="alert">

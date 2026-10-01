@@ -6,9 +6,9 @@ CalPal takes inspiration from the food diary in MyFitnessPal and photo logging i
 
 ## Project status
 
-Milestones 0–3 are complete. CalPal has an offline calorie/macro diary, local/custom foods and portions, favorites and recent entries, calorie targets with history, diary completion, weekly summaries, weight/body measurements/body-fat and water records, metric trends, versioned recipes and reusable saved meals. Records persist in local SQLite.
+Milestones 0–4 are complete. CalPal has an offline calorie/macro diary, local/custom foods and portions, favorites and recent entries, calorie targets with history, diary completion, weekly summaries, weight/body measurements/body-fat and water records, metric trends, versioned recipes and reusable saved meals. Optional local Ollama descriptions produce editable drafts with assumptions, nutrition-source snapshots and reviewed transactional saving. Records persist in local SQLite.
 
-The first platform is Windows desktop, confirmed by the owner. Built with Tauri 2, React, TypeScript, and bundled SQLite. Today logs foods and water, Recipes manages versioned recipes and saved meals, and Progress shows diary coverage and measurement history. AI and export/restore remain later milestones.
+The first platform is Windows desktop, confirmed by the owner. Built with Tauri 2, React, TypeScript, and bundled SQLite. Today logs foods and water, Recipes manages versioned recipes and saved meals, and Progress shows diary coverage and measurement history. AI defaults to off; see [local description setup](docs/AI.md). Photos, hosted AI and export/restore remain later work.
 
 ## Run and build
 
@@ -41,6 +41,8 @@ See [development and verification instructions](docs/REPOSITORY.md) for checks a
 - [Milestone 1 verification](docs/VERIFICATION.md)
 - [Milestone 2 verification](docs/VERIFICATION-M2.md)
 - [Milestone 3 verification](docs/VERIFICATION-M3.md)
+- [Local AI setup and review](docs/AI.md)
+- [Milestone 4 verification](docs/VERIFICATION-M4.md)
 - [Offline food catalog sources](catalog/README.md)
 
 ## Cost approach
