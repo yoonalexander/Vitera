@@ -2,7 +2,13 @@ import { environment } from "./environment.mjs";
 import { chromium, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { resolve, join } from "node:path";
 import { createServer } from "node:net";
 import {
@@ -13,7 +19,12 @@ import {
   metricsRecipesSmoke,
   verifyMetricsRecipesPersistence,
 } from "./metrics-recipes-smoke.mjs";
-import { aiSmoke, verifyAIPersistence, liveAiEvaluation } from "./ai-smoke.mjs";
+import {
+  aiSmoke,
+  verifyAIPersistence,
+  liveAiEvaluation,
+  verifyLiveAIPersistence,
+} from "./ai-smoke.mjs";
 import { dataExportSmoke, dataImportSmoke } from "./data-smoke.mjs";
 import { paletteSmoke, verifyPalettePersistence } from "./palette-smoke.mjs";
 
@@ -37,6 +48,12 @@ const directory = environment("SMOKE_DIR")
   : mkdtempSync(resolve("artifacts/smoke-"));
 mkdirSync(directory, { recursive: true });
 const dataDirectory = join(directory, "data");
+// Backups can have been made on a previous day. Verify their recorded diary date.
+const importedDiaryDate = process.argv.includes("--data-import")
+  ? JSON.parse(readFileSync(environment("IMPORT_BACKUP"), "utf8"))
+      .tables.find((table) => table.name === "diary_entries")
+      .rows.find((row) => row[3] === "Smoke lunch")?.[1]
+  : null;
 const server = createServer();
 await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 const port = server.address().port;
@@ -93,6 +110,10 @@ async function launch() {
   await expect(
     page.getByRole("button", { name: "＋ Add food", exact: true }),
   ).toBeEnabled();
+  if (importedDiaryDate)
+    await page
+      .getByLabel("Diary date", { exact: true })
+      .fill(importedDiaryDate);
   await context.setOffline(true);
   return page;
 }
@@ -302,6 +323,12 @@ try {
     );
   }
   expect(existsSync(join(dataDirectory, "calpal.sqlite3"))).toBe(true);
+  if (process.argv.includes("--ai-live")) {
+    await verifyLiveAIPersistence(page);
+    results.push(
+      "Restart preserves real parsed metadata and independently calculated 244 kcal",
+    );
+  }
   if (process.argv.includes("--ai")) {
     await verifyAIPersistence(page);
     results.push(

@@ -135,7 +135,7 @@ export function AISettings({ onClose }: { onClose: () => void }) {
               <input
                 value={config.model}
                 maxLength={120}
-                placeholder="e.g. gemma3:4b"
+                placeholder="qwen3.5:4b"
                 onChange={(e) => {
                   setConfig({ ...config, model: e.target.value });
                   setReadiness(null);
@@ -345,7 +345,7 @@ function ItemReview({
             });
           }}
         >
-          <option value="">AI-only / manually corrected estimate</option>
+          <option value="">Manual nutrition / no verified local match</option>
           {foods.map((f) => (
             <option key={f.id} value={f.id}>
               {f.name} · {f.state}
@@ -359,7 +359,7 @@ function ItemReview({
       <p className="source-note">
         {row.food
           ? `${row.food.state} · ${row.food.source} · v${row.food.version} · nutrition calculated from the local record`
-          : "AI-only estimate for the whole portion below. Missing macros stay unknown."}
+          : "No verified local match. Choose a matching record or enter nutrition from a label or another source. The model does not supply calories or macros."}
       </p>
       <div className="form-row">
         <label>
@@ -403,8 +403,8 @@ function ItemReview({
       {!row.food && (
         <>
           <p className="muted">
-            Changing the amount does not rescale AI-only values. Correct
-            calories and macros for the new portion.
+            Changing the amount does not rescale manual values. Correct calories
+            and macros for the new portion.
           </p>
           <div className="ai-nutrients">
             {nutrientKeys.map((k) => (
@@ -440,7 +440,7 @@ function ItemReview({
           {formatKcal(values.kcal!)} kcal
           {row.food
             ? " · local record with reviewed portion"
-            : " · AI-only / corrected estimate"}
+            : " · manually entered nutrition"}
           <span className="source-note">
             {["protein", "carbohydrate", "fat"]
               .map((k) => {
@@ -452,6 +452,27 @@ function ItemReview({
         </p>
       )}
       <div className="ai-assumptions">
+        {row.original.extraction && (
+          <p className="source-note">
+            {[
+              row.original.extraction.preparation &&
+                `Preparation: ${row.original.extraction.preparation}`,
+              row.original.extraction.brand &&
+                `Brand: ${row.original.extraction.brand}`,
+              row.original.extraction.restaurant &&
+                `Restaurant: ${row.original.extraction.restaurant}`,
+              ...row.original.extraction.modifiers,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+        )}
+        {row.original.unit && (
+          <p className="source-note">
+            Parsed portion: {row.original.quantity ?? "unknown"}{" "}
+            {row.original.unit}
+          </p>
+        )}
         <h4>Assumptions to check</h4>
         {row.original.assumptions.length ? (
           <ul>
@@ -709,6 +730,7 @@ export function DescriptionForm({
             reviewed: true,
             photo: draft.photo ?? null,
             visionModel: draft.visionModel ?? null,
+            extraction: row.original.extraction ?? null,
           },
         },
       })),
@@ -845,6 +867,7 @@ export function DescriptionForm({
           </p>
         )}
         {notice && <p role="status">{notice}</p>}
+        {draft?.notes && <p className="source-note">{draft.notes}</p>}
         {draft?.photoObservation && (
           <details>
             <summary>What the vision model saw</summary>
@@ -969,7 +992,7 @@ export function DescriptionForm({
               <p className="source-note">
                 Draft: {draft.model} · {draft.promptVersion} · schema{" "}
                 {draft.schemaVersion}. Local matches use stored nutrition; other
-                rows retain the AI-only estimate label.
+                rows are labeled as manual nutrition from a parsed entry.
               </p>
             )}
           </fieldset>

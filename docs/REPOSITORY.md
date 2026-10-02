@@ -55,6 +55,10 @@ docs/             # product design, roadmap, setup notes
 
 Food catalogs and test fixtures must carry provenance and use synthetic or permitted sample records. Store application data in the platform app-data directory, separate from the source checkout.
 
+Food extraction uses `src-tauri/src/food_parser.rs` for the typed provider/service contract, and the existing `ai.rs` Ollama adapter and draft pipeline. `ai/food-parsing-schema.json` is the active schema; the older description schema documents historical version-1 drafts. Normal native tests mock the provider and loopback transport and cover the six examples in `ai/parsing-fixtures.json`, invalid output, unavailable models, HTTP errors, cancellation and timeouts. `--ai-live` explicitly opts into real inference for those examples and measured/ambiguous controls, verifies that the model supplies no nutrients, saves a reviewed 244 kcal meal and checks metadata after restart.
+
+The Node launcher loads optional `.env` configuration only into its child process. `OLLAMA_BASE_URL=http://localhost:11434` and `OLLAMA_MODEL=qwen3.5:4b` initialize new AI settings; saved settings win thereafter. See [.env.example](../.env.example) and [README setup](../README.md#local-ollama-setup). Ollama 0.31.2 or newer is required for reliable Qwen schema enforcement with thinking disabled.
+
 ## Development and verification
 
 Before implementation, read [DESIGN.md](DESIGN.md) and the requested milestone in [ROADMAP.md](ROADMAP.md). Keep product defaults free, offline-capable, and independent of AI setup.
@@ -73,7 +77,7 @@ npm.cmd run test:native
 npm.cmd run tauri -- build
 ```
 
-Install Rust formatting/lint components once with `rustup component add rustfmt clippy` if needed. The installer is generated at `src-tauri/target/release/bundle/nsis/Vitera_0.2.2_x64-setup.exe`. It is an optimized personal-release build, unsigned, and installs per user. WebView2 is required; the installer downloads its bootstrapper if it is absent. The application itself needs no network connection.
+Install Rust formatting/lint components once with `rustup component add rustfmt clippy` if needed. The installer is generated at `src-tauri/target/release/bundle/nsis/Vitera_0.2.3_x64-setup.exe`. It is an optimized personal-release build, unsigned, and installs per user. WebView2 is required; the installer downloads its bootstrapper if it is absent. The application itself needs no network connection.
 
 Ordinary app data resides under `%APPDATA%\com.yoonalexander.calpal\calpal.sqlite3`, separate from the install directory. Migrations run transactionally; unsupported newer schemas are refused without resetting records. Deletes are soft deletes, with Undo for the most recent deletion. See [release, backup and recovery](RELEASE.md) for complete export/restore.
 
@@ -90,7 +94,7 @@ Add `-- --nutrition` to run the Milestone 2 installed workflow, including source
 
 For the complete Milestone 1–3 workflow, run `npm.cmd run test:installed -- --nutrition --metrics-recipes`. This checks actual recipe serving/weighed portions, ingredient and recipe version history, saved-meal copies, measurement units, multiple daily records, chart gaps and rolling-mean coverage. Reinstallation checks on its populated smoke directory use `-- --verify-existing --nutrition --metrics-recipes`. Migrations support the earlier schema versions without resetting records.
 
-Add `--ai` to include the installed Milestone 4 fixture workflow. It serves synthetic Ollama replies on an ephemeral loopback port and calls the actual native adapter, review UI and SQLite storage; it does not substitute browser calculation/storage mocks. Add `--ai-live` to separately evaluate a running real local Ollama model and its visible review/save flow. `VITERA_OLLAMA_MODEL` selects the installed model (default `gemma3:4b`); the live run never pulls a model. Example: `npm.cmd run test:installed -- --nutrition --metrics-recipes --ai --ai-live`. The live evaluation writes raw synthetic-meal results into ignored artifacts; valid drafts and measured errors are reported separately.
+Add `--ai` to include the installed Milestone 4 fixture workflow. It serves synthetic Ollama replies on an ephemeral loopback port and calls the actual native adapter, review UI and SQLite storage; it does not substitute browser calculation/storage mocks. Add `--ai-live` to separately evaluate a running real local Ollama model and its visible review/save flow. `VITERA_OLLAMA_MODEL` selects the installed model (default `qwen3.5:4b`); the live run never pulls a model. Example: `npm.cmd run test:installed -- --nutrition --metrics-recipes --ai --ai-live`. The live evaluation writes raw synthetic-meal results into ignored artifacts; valid drafts and measured errors are reported separately.
 
 Reinstallation checks use `-- --verify-existing --nutrition --metrics-recipes --ai`. For a deliberate additional real-model text comparison on that isolated directory, also add `--ai-live --evaluate-live`; only its specifically named synthetic live-review entries are replaced. See [AI setup](AI.md) and [Milestone 4 verification](VERIFICATION-M4.md).
 
@@ -105,7 +109,7 @@ The downloader is a developer script, never invoked by the application. It saves
 
 Milestone 6 checks add `--data-export` to an existing populated smoke directory to verify CSV/backup files, invalid imports, preview cancellation and accessibility. The child process alone receives `VITERA_EXPORT_DIR` alongside its isolated `VITERA_DATA_DIR`; production launches use the Windows save dialog. For restore, set `VITERA_IMPORT_BACKUP` to a previously exported populated `.vitera` file and run a fresh smoke directory with `--data-import --nutrition --metrics-recipes --ai --photos --photos-live`. That mode initializes a synthetic replacement record, restores/re-recovers the backup, compares all data tables and checks existing records after restart; it does not rerun model inference. See [Milestone 6 results and limits](VERIFICATION-M6.md).
 
-The native schema is version 5, adding photo retention receipts and JPEG attachments to the version-4 AI configuration/save receipts. Originals and prepared temporary images are never written to a file; retained attachments are transactional SQLite blobs. See [Milestone 5 verification](VERIFICATION-M5.md) for source references, inference limitations and installer evidence.
+The native schema is version 6, adding custom palette settings to the photo retention receipts and JPEG attachments introduced in version 5. Originals and prepared temporary images are never written to a file; retained attachments are transactional SQLite blobs. See [Milestone 5 verification](VERIFICATION-M5.md) for source references, inference limitations and installer evidence.
 
 The harness launches the actual executable, attaches Playwright to its WebView2 instance, simulates offline operation, and uses the real native SQLite commands. It creates isolated synthetic records, a separate WebView2 profile, screenshots, and results under ignored `artifacts/smoke-*`. It verifies add/edit/delete/undo, date separation, keyboard form submission, dialog focus, navigation, appearance persistence, accessibility in both themes, narrow/200% text layout, and restart persistence. Its temporary remote-debugging port is enabled only in the test child process; normal app launch does not enable it.
 

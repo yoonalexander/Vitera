@@ -178,9 +178,9 @@ Recipe editing creates a new version. Previously logged portions retain their or
 
 Reusable meals are bundles of foods or recipe portions with a name, intended for repeat logging. Copying a meal creates independent diary entries; editing the saved meal does not rewrite previous days.
 
-## 8. AI photo and description estimates
+## 8. AI photo and description parsing
 
-AI is a shortcut into the diary. It proposes food identities, amounts, and assumptions. Deterministic code calculates nutrition from matched food records whenever possible. Every result is a draft until the user saves it.
+AI is a shortcut into the diary. It extracts food identities, amounts, preparation, brands/restaurants, modifiers and uncertainty. In version 0.2.3, local Ollama defaults to `qwen3.5:4b` and uses a typed schema without calorie or macro fields. Deterministic code calculates nutrition from compatible local food records. Every result is a draft until the user reviews and saves it.
 
 ### Photo flow
 
@@ -194,7 +194,7 @@ AI is a shortcut into the diary. It proposes food identities, amounts, and assum
 
 ### Description flow
 
-Example: “Two eggs, two slices of toast with butter, and coffee with milk.” Parse separate items and preserve supplied units. Reuse known portion conversions where possible. Show assumed butter and milk amounts rather than hiding them. Ask one compact clarification when the missing amount materially affects the result; otherwise make the assumption visible and editable.
+Example: “Two eggs, two slices of toast with butter, and coffee with milk.” Parse separate items and preserve supplied units. Reuse known portion conversions where possible. Unspecified butter and milk amounts remain null and require review. Preserve stated counts and sizes without fabricating exact serving weights.
 
 ### Estimate quality
 
@@ -202,7 +202,7 @@ A single image cannot reliably reveal exact mass, hidden oil, ingredients, or pr
 
 Use evidence labels such as **label/manual**, **database with known portion**, and **AI with assumed portion**. Do not invent percentage accuracy or treat model-reported confidence as calibrated certainty. An AI-generated interval is also an estimate, not a validated statistical confidence interval.
 
-The reviewed estimate may be logged even when no database match exists, provided the row is clearly marked AI-only. Preserve its assumptions and unknown nutrients. Never fabricate a food-database identifier or present missing macros as zero.
+When no compatible local nutrition record exists, calorie/macronutrient fields remain unknown. The user can choose a source record or enter manual nutrition for the whole portion before saving. Label those entries **Manual nutrition from parsed entry**. Preserve metadata, assumptions and unknown nutrients. Historical schema-1 entries retain their earlier AI-estimate provenance. Never fabricate a food-database identifier or present missing macros as zero.
 
 ### Provider strategy
 

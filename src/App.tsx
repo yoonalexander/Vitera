@@ -660,7 +660,7 @@ export function App() {
                                 : entry.recipePortion
                                   ? `${entry.recipePortion.quantity} ${entry.recipePortion.unit} · ${entry.recipePortion.recipe.name} · recipe v${entry.recipePortion.recipe.version}`
                                   : entry.ai
-                                    ? `AI-only reviewed estimate · ${entry.ai.quantity} ${entry.ai.unit}`
+                                    ? `${entry.ai.schemaVersion >= 2 ? "Manual nutrition from parsed entry" : "AI-only reviewed estimate"} · ${entry.ai.quantity} ${entry.ai.unit}`
                                     : "Manual entry"}
                               {entry.ai && (
                                 <span> · AI draft: {entry.ai.model}</span>
@@ -671,7 +671,11 @@ export function App() {
                             </p>
                             {entry.ai && (
                               <details className="entry-assumptions">
-                                <summary>Estimate assumptions</summary>
+                                <summary>
+                                  {entry.ai.schemaVersion >= 2
+                                    ? "Parsed details and assumptions"
+                                    : "Estimate assumptions"}
+                                </summary>
                                 <p>
                                   {entry.ai.originalName} · original portion:{" "}
                                   {entry.ai.originalQuantity ?? "unspecified"}{" "}
@@ -679,6 +683,18 @@ export function App() {
                                     ? "named food portion"
                                     : (entry.ai.originalUnit ?? "")}
                                 </p>
+                                {entry.ai.extraction && (
+                                  <p>
+                                    {[
+                                      entry.ai.extraction.preparation,
+                                      entry.ai.extraction.brand,
+                                      entry.ai.extraction.restaurant,
+                                      ...entry.ai.extraction.modifiers,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" · ")}
+                                  </p>
+                                )}
                                 {entry.ai.assumptions.map((a, i) => (
                                   <p key={i}>{a}</p>
                                 ))}

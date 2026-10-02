@@ -1,7 +1,7 @@
 import { environment } from "./environment.mjs";
 import { expect } from "@playwright/test";
 import { createServer } from "node:http";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const exact = (page, name) => page.getByRole("button", { name, exact: true });
@@ -20,7 +20,10 @@ const candidate = (patch = {}) => ({
   foodId: null,
   quantity: 1,
   unit: "serving",
-  nutrients: { kcal: 350, protein: null, carbohydrate: 30, fat: null },
+  preparation: null,
+  brand: null,
+  restaurant: null,
+  modifiers: [],
   assumptions: ["Synthetic fixture assumes one sandwich."],
   questions: [],
   ...patch,
@@ -32,11 +35,11 @@ const valid = () => ({
       foodId: "usda-v1-173944",
       quantity: 100,
       unit: "g",
-      nutrients: { kcal: 999, protein: null, carbohydrate: null, fat: null },
       assumptions: [],
     }),
     candidate(),
   ],
+  notes: null,
 });
 async function open(page) {
   await exact(page, "＋ Add food").click();
@@ -62,7 +65,7 @@ export async function aiSmoke(page, directory, accessibility) {
     calls++;
     expect(body.stream).toBe(false);
     expect(body.format.properties.items).toBeDefined();
-    expect(body.messages[1].content).toContain("Synthetic meal");
+    expect(body.messages.at(-1).content).toContain("Synthetic meal");
     if (mode === "delayed" || mode === "timeout") {
       delayed = true;
       await new Promise((r) => setTimeout(r, mode === "timeout" ? 6000 : 1200));
@@ -142,6 +145,7 @@ export async function aiSmoke(page, directory, accessibility) {
       first.getByText("134 kcal · local record with reviewed portion"),
     ).toBeVisible();
     await second.getByLabel("Calories (kcal)").fill("400");
+    await expect(second.getByLabel("Protein (g)")).toHaveValue("");
     // Opening settings preserves an edited draft and original text.
     await exact(page, "AI settings").click();
     await exact(page, "Close settings").click();
@@ -289,9 +293,9 @@ export async function verifyAIPersistence(page) {
   await expect(page.getByTestId("daily-total")).toHaveText("534");
   await expect(exact(page, "Edit Corrected synthetic sandwich")).toBeVisible();
   await expect(
-    page
-      .locator(".entry-source")
-      .filter({ hasText: "AI-only reviewed estimate" }),
+    page.locator(".entry-source").filter({
+      hasText: /AI-only reviewed estimate|Manual nutrition from parsed entry/,
+    }),
   ).toBeVisible();
   await expect(page.locator(".entry-assumptions")).toHaveCount(2);
   await exact(page, "Edit Corrected synthetic sandwich").click();
@@ -307,7 +311,7 @@ export async function liveAiEvaluation(page, directory, accessibility) {
     enabled: true,
     provider: "ollama",
     port: 11434,
-    model: environment("OLLAMA_MODEL") ?? "gemma3:4b",
+    model: environment("OLLAMA_MODEL") ?? "qwen3.5:4b",
     timeoutSeconds: 180,
   };
   await invoke(page, "save_ai_config", { config });
@@ -332,6 +336,17 @@ export async function liveAiEvaluation(page, directory, accessibility) {
       expectedKcal: null,
       expectedItems: null,
     },
+    ...JSON.parse(
+      readFileSync(
+        new URL("../ai/parsing-fixtures.json", import.meta.url),
+        "utf8",
+      ),
+    ).map((sample) => ({
+      text: sample.text,
+      expectedKcal: null,
+      expectedItems: sample.items.length,
+      expectedFields: sample.items,
+    })),
   ];
   const evaluation = [];
   for (const sample of samples) {
@@ -378,14 +393,74 @@ export async function liveAiEvaluation(page, directory, accessibility) {
     JSON.stringify(
       {
         model: config.model,
-        promptVersion: "description-1",
+        promptVersion: "description-2",
         samples: evaluation,
       },
       null,
       2,
     ),
   );
-  expect(evaluation.some((e) => !e.error)).toBe(true);
+  expect(evaluation.filter((e) => e.error)).toEqual([]);
+  for (const result of evaluation) {
+    expect(result.draft.schemaVersion).toBe(2);
+    expect(result.draft.model).toBe(config.model);
+    expect(
+      result.draft.items.every((item) =>
+        Object.values(item.candidate.nutrients).every(
+          (value) => value === null,
+        ),
+      ),
+    ).toBe(true);
+    if (result.expectedFields) {
+      expect(result.draft.items.length, result.text).toBe(
+        result.expectedFields.length,
+      );
+      const normalize = (value) =>
+        value
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "")
+          .replace(/s$/, "");
+      for (const expected of result.expectedFields) {
+        const actual = result.draft.items.find((item) =>
+          normalize(item.candidate.name).includes(
+            normalize(
+              expected.preparation
+                ? expected.name.replace(expected.preparation, "")
+                : expected.name,
+            ),
+          ),
+        )?.candidate;
+        expect(actual, `${result.text}: ${expected.name}`).toBeDefined();
+        expect(actual.quantity, `${result.text}: ${expected.name} amount`).toBe(
+          expected.quantity,
+        );
+        const unit =
+          actual.unit === "tbsp"
+            ? "tablespoon"
+            : actual.unit === "piece"
+              ? "count"
+              : actual.unit;
+        expect(unit, `${result.text}: ${expected.name} unit`).toBe(
+          expected.unit,
+        );
+        if (expected.preparation)
+          expect(normalize(actual.extraction.preparation ?? "")).toContain(
+            normalize(expected.preparation),
+          );
+        if (expected.restaurant)
+          expect(normalize(actual.extraction.restaurant ?? "")).toBe(
+            normalize(expected.restaurant),
+          );
+        for (const modifier of expected.modifiers ?? [])
+          expect(actual.extraction.modifiers.map(normalize)).toContain(
+            normalize(modifier),
+          );
+      }
+    }
+  }
+  // Explicit measured portions must use the existing USDA records, never model calories.
+  expect(evaluation[0].totalLocalKcal).toBe(244);
+  expect(evaluation[0].matches).toBe(2);
   // Exercise a real description through the visible composer; save an explicitly corrected draft.
   await open(page);
   await page.getByLabel("Meal description").fill(samples[0].text);
@@ -435,4 +510,18 @@ export async function liveAiEvaluation(page, directory, accessibility) {
     config: { ...config, enabled: false },
   });
   return `Real local ${config.model}: ${evaluation.filter((e) => !e.error).length}/${samples.length} descriptions produced drafts; independently corrected visible two-item review saved at 244 kcal. Detailed raw results are recorded separately from fixtures.`;
+}
+
+export async function verifyLiveAIPersistence(page) {
+  const today = await page
+    .getByLabel("Diary date", { exact: true })
+    .inputValue();
+  const saved = await invoke(page, "get_day", { date: priorDate(today, -9) });
+  expect(saved.totalKcal).toBe(244);
+  expect(saved.entries.length).toBe(2);
+  expect(
+    saved.entries.every(
+      (entry) => entry.ai?.schemaVersion === 2 && entry.ai?.extraction,
+    ),
+  ).toBe(true);
 }

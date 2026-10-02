@@ -1,11 +1,19 @@
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { parseEnv } from "node:util";
 import { delimiter, join } from "node:path";
 import { homedir } from "node:os";
 
 // rustup can be installed without changing the user's global PATH.
 const cargoBin = join(homedir(), ".cargo", "bin");
 const env = { ...process.env };
+// Node's built-in dotenv parser keeps development configuration in the native process.
+// Existing process variables win; no secrets or settings are bundled into the webview.
+if (existsSync(".env"))
+  for (const [key, value] of Object.entries(
+    parseEnv(readFileSync(".env", "utf8")),
+  ))
+    if (env[key] === undefined) env[key] = value;
 const pathKey =
   Object.keys(env).find((key) => key.toLowerCase() === "path") ?? "PATH";
 if (existsSync(cargoBin))

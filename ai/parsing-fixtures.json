@@ -1,0 +1,78 @@
+[
+  {
+    "text": "I ate 2 eggs and a banana",
+    "items": [
+      { "name": "eggs", "quantity": 2, "unit": "count" },
+      { "name": "banana", "quantity": 1, "unit": "count" }
+    ]
+  },
+  {
+    "text": "I had a large bowl of spaghetti with meat sauce and parmesan",
+    "items": [
+      {
+        "name": "spaghetti",
+        "quantity": 1,
+        "unit": "bowl",
+        "modifiers": ["large"]
+      },
+      { "name": "meat sauce", "quantity": null, "unit": null },
+      { "name": "parmesan", "quantity": null, "unit": null }
+    ]
+  },
+  {
+    "text": "I drank a medium iced coffee with milk",
+    "items": [
+      {
+        "name": "iced coffee",
+        "quantity": 1,
+        "unit": "cup",
+        "preparation": "iced",
+        "modifiers": ["medium"]
+      },
+      { "name": "milk", "quantity": null, "unit": null }
+    ]
+  },
+  {
+    "text": "I had 150g of grilled chicken, a cup of rice, and half an avocado",
+    "items": [
+      {
+        "name": "chicken",
+        "quantity": 150,
+        "unit": "g",
+        "preparation": "grilled"
+      },
+      { "name": "rice", "quantity": 1, "unit": "cup" },
+      { "name": "avocado", "quantity": 0.5, "unit": "count" }
+    ]
+  },
+  {
+    "text": "I got a Big Mac and medium fries from McDonald's",
+    "items": [
+      {
+        "name": "Big Mac",
+        "quantity": 1,
+        "unit": "count",
+        "restaurant": "McDonald's"
+      },
+      {
+        "name": "fries",
+        "quantity": 1,
+        "unit": "serving",
+        "restaurant": "McDonald's",
+        "modifiers": ["medium"]
+      }
+    ]
+  },
+  {
+    "text": "For breakfast I had two slices of toast with a tablespoon of peanut butter on each",
+    "items": [
+      {
+        "name": "toast",
+        "quantity": 2,
+        "unit": "slice",
+        "preparation": "toasted"
+      },
+      { "name": "peanut butter", "quantity": 2, "unit": "tablespoon" }
+    ]
+  }
+]

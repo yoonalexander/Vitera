@@ -1,0 +1,64 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["items", "notes"],
+  "properties": {
+    "notes": { "type": ["string", "null"], "maxLength": 500 },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "foodId",
+          "quantity",
+          "unit",
+          "preparation",
+          "brand",
+          "restaurant",
+          "modifiers",
+          "assumptions",
+          "questions"
+        ],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "foodId": { "type": ["string", "null"] },
+          "quantity": {
+            "type": ["number", "null"],
+            "description": "Total explicitly stated amount. A/an = 1, half = 0.5. Keep measured weights intact and multiply per-item toppings. Null only when not specified."
+          },
+          "unit": {
+            "type": ["string", "null"],
+            "maxLength": 60,
+            "description": "The amount's unit: g for grams, count for individual foods, cup, bowl, slice, tablespoon, serving. Never replace a stated weight with a count or invent grams."
+          },
+          "preparation": {
+            "type": ["string", "null"],
+            "maxLength": 120,
+            "description": "Only the explicitly stated cooking/preparation method. Eggs with no stated method must have null preparation."
+          },
+          "brand": { "type": ["string", "null"], "maxLength": 120 },
+          "restaurant": { "type": ["string", "null"], "maxLength": 120 },
+          "modifiers": {
+            "type": "array",
+            "maxItems": 12,
+            "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+          },
+          "assumptions": {
+            "type": "array",
+            "maxItems": 12,
+            "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+          },
+          "questions": {
+            "type": "array",
+            "maxItems": 12,
+            "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+          }
+        }
+      }
+    }
+  }
+}

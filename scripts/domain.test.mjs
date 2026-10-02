@@ -146,3 +146,29 @@ test("AI review blocks missing portions, unsupported units and unconfirmed edits
   assert.match(rowIssue(row), /valid optional macros/);
   assert.equal(row.id, id);
 });
+
+test("parsed metadata survives review and unmatched foods require manual nutrition", () => {
+  const candidate = {
+    name: "Big Mac",
+    foodId: null,
+    quantity: 1,
+    unit: "count",
+    nutrients: { kcal: null, protein: null, carbohydrate: null, fat: null },
+    extraction: {
+      preparation: null,
+      brand: null,
+      restaurant: "McDonald's",
+      modifiers: [],
+    },
+    assumptions: [],
+    questions: [],
+  };
+  const [row] = reviewRows({ items: [{ candidate, food: null }] });
+  assert.equal(row.original.extraction.restaurant, "McDonald's");
+  row.reviewed = true;
+  assert.match(rowIssue(row), /Enter calories/);
+  assert.deepEqual(row.nutrients, candidate.nutrients);
+  row.nutrients.kcal = 500;
+  assert.equal(rowIssue(row), null);
+  assert.equal(candidate.nutrients.kcal, null);
+});

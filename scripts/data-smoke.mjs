@@ -207,13 +207,34 @@ export async function dataImportSmoke(page, directory, source, accessibility) {
   await expect(page.getByTestId("daily-total")).toHaveText("650");
   await accessibility(page, "restore-dark");
   const restored = JSON.parse((await exported(page, directory, "backup")).data);
+  const currentDate = await page.evaluate(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  });
   for (const table of backup.tables) {
     if (table.name !== "ai_config") {
       const expected =
         table.name === "settings" && backup.schema === 5
           ? table.rows.map((row) => [...row, null])
           : table.rows;
-      expect(rowTable(restored, table.name).rows).toEqual(expected);
+      const actual = rowTable(restored, table.name).rows;
+      if (table.name === "diary_days") {
+        const added = actual.filter(
+          (row) => !expected.some((old) => old[0] === row[0]),
+        );
+        // Opening the diary initializes today's target snapshot. Older backups
+        // still have to preserve every original row, with no other extra data.
+        const latestGoal = rowTable(backup, "goal_versions")
+          .rows.filter((row) => row[1] <= currentDate)
+          .sort((a, b) => b[1].localeCompare(a[1]) || b[0] - a[0])[0];
+        if (added.length)
+          expect(added).toEqual([
+            [currentDate, latestGoal ? JSON.parse(latestGoal[2]) : null, 0],
+          ]);
+        expect(
+          actual.filter((row) => expected.some((old) => old[0] === row[0])),
+        ).toEqual(expected);
+      } else expect(actual).toEqual(expected);
     }
   }
   const config = JSON.parse(rowTable(restored, "ai_config").rows[0][1]);

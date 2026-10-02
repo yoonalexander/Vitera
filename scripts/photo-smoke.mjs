@@ -33,7 +33,10 @@ const item = {
   foodId: "usda-v1-173944",
   quantity: 100,
   unit: "g",
-  nutrients: { kcal: null, protein: null, carbohydrate: null, fat: null },
+  preparation: null,
+  brand: null,
+  restaurant: null,
+  modifiers: [],
   assumptions: ["Synthetic visual portion: 100 g."],
   questions: [],
 };
@@ -72,7 +75,7 @@ export async function photoSmoke(page, directory, accessibility) {
       expect(jpeg.includes(Buffer.from("Exif"))).toBe(false);
     } else {
       expect(body.messages[0].content).toContain("PHOTO inference");
-      expect(body.messages[1].content).toContain("Photo observations");
+      expect(body.messages.at(-1).content).toContain("Photo observations");
       expect(body.format.properties.items).toBeDefined();
     }
     if (mode === "delay" || mode === "timeout") {
@@ -92,7 +95,7 @@ export async function photoSmoke(page, directory, accessibility) {
               ? "invalid JSON"
               : visual
                 ? "A synthetic banana is visible. Portion uncertain."
-                : JSON.stringify({ items: [item] }),
+                : JSON.stringify({ items: [item], notes: null }),
         },
       }),
     );
@@ -207,7 +210,7 @@ export async function photoSmoke(page, directory, accessibility) {
     expect(day.entries).toHaveLength(1);
     expect(day.totalKcal).toBe(89);
     const entry = day.entries[0];
-    expect(entry.ai.promptVersion).toBe("photo-1");
+    expect(entry.ai.promptVersion).toBe("photo-2");
     expect(entry.ai.model).toBe("synthetic-draft");
     expect(entry.ai.visionModel).toBe("synthetic-vision");
     expect(entry.ai.assumptions.join(" ")).toContain("Photo estimate");
@@ -501,7 +504,7 @@ export async function livePhotoEvaluation(page, directory, accessibility) {
     expect(saved.kcal).toBe(reference.kcal);
     expect(saved.ai.model).toBe(model);
     expect(saved.ai.visionModel).toBe(visionModel);
-    expect(saved.ai.promptVersion).toBe("photo-1");
+    expect(saved.ai.promptVersion).toBe("photo-2");
     expect(saved.protein).toBeNull();
     evaluations[i].reviewed = {
       date,

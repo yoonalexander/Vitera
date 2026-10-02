@@ -40,6 +40,13 @@ export interface AiProvenance {
   reviewed: boolean;
   photo?: PhotoInfo | null;
   visionModel?: string | null;
+  extraction?: FoodDetails | null;
+}
+export interface FoodDetails {
+  preparation: string | null;
+  brand: string | null;
+  restaurant: string | null;
+  modifiers: string[];
 }
 export interface Candidate {
   name: string;
@@ -49,6 +56,7 @@ export interface Candidate {
   nutrients: Nutrients;
   assumptions: string[];
   questions: string[];
+  extraction?: FoodDetails | null;
 }
 export interface TextDraft {
   requestId: string;
@@ -60,6 +68,7 @@ export interface TextDraft {
   photo?: PhotoInfo | null;
   photoObservation?: string | null;
   visionModel?: string | null;
+  notes?: string | null;
   items: {
     candidate: Candidate;
     food: Food | null;
@@ -127,6 +136,15 @@ export const units = [
   "l",
   "fl oz (US)",
   "serving",
+  "count",
+  "slice",
+  "cup",
+  "tbsp",
+  "tsp",
+  "bowl",
+  "can",
+  "bottle",
+  "piece",
 ];
 export interface ReviewRow {
   id: string;

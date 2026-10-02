@@ -308,7 +308,14 @@ impl Database {
             input.nutrition.energy_type = Some("recipe ingredient sum".into());
         } else {
             input.nutrition.energy_type = Some(
-                if input.nutrition.ai.is_some() {
+                if input
+                    .nutrition
+                    .ai
+                    .as_ref()
+                    .is_some_and(|ai| ai.schema_version >= 2)
+                {
+                    "Manual nutrition from parsed entry"
+                } else if input.nutrition.ai.is_some() {
                     "AI-only reviewed estimate"
                 } else {
                     "manual"

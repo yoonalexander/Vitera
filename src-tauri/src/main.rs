@@ -4,6 +4,7 @@ mod ai;
 mod backup;
 mod db;
 mod file_dialog;
+mod food_parser;
 mod metrics;
 mod nutrition;
 mod palette;

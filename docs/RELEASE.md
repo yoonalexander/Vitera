@@ -1,10 +1,10 @@
 # Vitera personal release
 
-Version 0.2.2 is an unsigned, per-user Windows x64 release. Manual food logging, local foods, recipes, targets and measurements work without an account, subscription, AI model or cloud key. See [palette release verification](VERIFICATION-PALETTES.md) for the current checks, [original release verification](VERIFICATION-M6.md) for the milestone-6 environment and limits, and [custom palettes](PALETTES.md) for the latest settings feature.
+Version 0.2.3 is an unsigned, per-user Windows x64 release. Manual food logging, local foods, recipes, targets and measurements work without an account, subscription, AI model or cloud key. See [Qwen parsing verification](VERIFICATION-QWEN.md) for current checks, [palette release verification](VERIFICATION-PALETTES.md) for the previous release and [original release verification](VERIFICATION-M6.md) for milestone-6 limits.
 
 ## Install and upgrade
 
-Run `Vitera_0.2.2_x64-setup.exe` and launch Vitera from its installed shortcut. Windows may show a trust warning because this personal build is unsigned. No Node.js, Rust or Ollama installation is required to run the packaged app.
+Run `Vitera_0.2.3_x64-setup.exe` and launch Vitera from its installed shortcut. Windows may show a trust warning because this personal build is unsigned. No Node.js, Rust or Ollama installation is required for manual tracking in the packaged app.
 
 Microsoft WebView2 Runtime is required. When it is absent, the installer downloads its bootstrapper and needs internet. For an offline machine, install Microsoft's x64 Evergreen Standalone Runtime first; Microsoft documents the [offline distribution option](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution). The app itself works offline after installation. Installing on a pristine VM without WebView2 has not been tested here.
 
@@ -14,6 +14,8 @@ Version 0.2.1 renames CalPal to Vitera. The installer retains the original Windo
 
 Version 0.2.2 adds **Settings → Color palette** and migrates settings to database schema 6. Existing records and appearance are preserved; default palettes are used until you customize them. Keep an older schema-5 backup before upgrading if you need to return to an earlier app build.
 
+Version 0.2.3 adds local typed food parsing with `qwen3.5:4b` as the default for new AI settings. Existing saved model selections remain unchanged. New drafts never accept model-supplied calories or macros; unmatched rows require a local record or manual nutrition. The database remains schema 6 and complete backups remain version 2. Historical schema-1 AI provenance remains readable, but earlier app versions cannot read the new schema-2 provenance; keep a pre-upgrade backup if downgrading. See [setup commands and configuration](../README.md#local-ollama-setup).
+
 For development, follow [repository setup](REPOSITORY.md). Build the personal-release installer with:
 
 ```powershell
@@ -21,7 +23,7 @@ npm.cmd ci
 npm.cmd run tauri -- build
 ```
 
-Output: `src-tauri/target/release/bundle/nsis/Vitera_0.2.2_x64-setup.exe`. Generated installers stay outside Git. CI packages the release installer as a private workflow artifact; local checks do not confirm that a remote CI run passed.
+Output: `src-tauri/target/release/bundle/nsis/Vitera_0.2.3_x64-setup.exe`. Generated installers stay outside Git. CI packages the release installer as a private workflow artifact; local checks do not confirm that a remote CI run passed.
 
 ## Export and complete backups
 
